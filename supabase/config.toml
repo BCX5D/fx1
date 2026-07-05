@@ -1,0 +1,18 @@
+# Durable Supabase CLI project link for Wirby.
+#
+# Unlike supabase/.temp/ (a gitignored, machine-local CLI cache that silently
+# drifts whenever `supabase link` is run against the wrong account), this file
+# is checked into the repo so the intended production project is unambiguous
+# to every contributor and every machine.
+#
+# Wirby's real production project is kfhbmfaikejsfoxngmue (see VITE_SUPABASE_URL
+# in .env.local / the host's env vars). Before running supabase db push,
+# supabase link, or supabase gen types, run:
+#
+#   supabase link --project-ref kfhbmfaikejsfoxngmue
+#
+# ...from an account that has been granted access to that project. If the
+# command fails with a privilege error, you are logged into the CLI with an
+# account that does not yet have access — request access before pushing
+# anything, do not link to a different project as a workaround.
+project_id = "kfhbmfaikejsfoxngmue"

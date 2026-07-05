@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+/*
+  Wirby design tokens.
+  Type system: Newsreader (editorial display serif), Instrument Sans (UI/body),
+  Spline Sans Mono (amounts + dates only).
+  Palette: green-tinted paper base, deep pine as the single brand accent,
+  semantic urgency colors: ember (due soon) and clay red (overdue).
+  Radius rule: controls 10px, panels 16px, status badges pill. Nothing else.
+  Theme: locked light. This is a brand decision, not an omission.
+*/
+@theme {
+  --font-sans: "Instrument Sans Variable", "Avenir Next", "Trebuchet MS", sans-serif;
+  --font-display: "Newsreader Variable", Georgia, "Times New Roman", serif;
+  --font-mono: "Spline Sans Mono Variable", "Cascadia Code", "Courier New", monospace;
+
+  --color-paper: #f3f3ed;
+  --color-panel: #fcfcf9;
+  --color-ink: #18211b;
+  --color-ink-soft: #414f47;
+  /* ink-faint carries small secondary text (timestamps, captions, metadata).
+     #556155 = 5.84:1 on paper / 6.2:1 on panel, a real AA margin vs. the old
+     4.69:1 that sat on the threshold. Still clearly below ink-soft in weight. */
+  --color-ink-faint: #556155;
+  --color-line: #dfe2d6;
+  --color-line-strong: #c5cbbc;
+
+  --color-pine-50: #eff3ec;
+  --color-pine-100: #e1eadd;
+  --color-pine-200: #c2d4c1;
+  --color-pine-300: #9bb89e;
+  --color-pine-600: #23573f;
+  --color-pine-700: #1a4531;
+  --color-pine-800: #143529;
+  --color-pine-900: #0f2a20;
+  --color-pine-950: #0a1f17;
+
+  --color-ember-100: #f5e8cf;
+  --color-ember-200: #ebd4a6;
+  --color-ember-700: #8a500e;
+  --color-ember-800: #6f400b;
+
+  --color-alert-100: #f6e1da;
+  --color-alert-200: #ecb4a4;
+  --color-alert-700: #a03823;
+  --color-alert-800: #832f1e;
+
+  --shadow-panel: 0 1px 2px rgb(28 38 32 / 0.05), 0 10px 28px -14px rgb(28 38 32 / 0.14);
+  --shadow-float: 0 2px 4px rgb(28 38 32 / 0.06), 0 20px 48px -20px rgb(28 38 32 / 0.22);
+}
+
+@layer base {
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+    font-feature-settings: "ss01";
+  }
+  ::selection {
+    background: var(--color-pine-200);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-pine-600);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  h1, h2, h3, blockquote {
+    text-wrap: balance;
+    font-optical-sizing: auto;
+  }
+}
+
+@utility press {
+  transition: transform 120ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  &:active {
+    transform: translateY(1px) scale(0.99);
+  }
+}
+
+@utility skeleton {
+  background: var(--color-line);
+  border-radius: 8px;
+}
+
+.rise { opacity: 1; }
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+  .rise {
+    opacity: 0;
+    transform: translateY(14px);
+    animation: lp-rise 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: calc(var(--i, 0) * 80ms);
+  }
+  @keyframes lp-rise {
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .toast-in {
+    animation: lp-toast 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes lp-toast {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.97);
+    }
+  }
+  .skeleton {
+    animation: lp-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes lp-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+}

@@ -1,0 +1,9 @@
+node_modules
+dist
+*.local
+.env
+.env.*
+
+# Supabase CLI local cache -- machine-local, drifts per developer/account.
+# The durable project link lives in supabase/config.toml instead (checked in).
+supabase/.temp/

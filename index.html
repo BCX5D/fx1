@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      These are the DEFAULT / FALLBACK tags for the site. They render before
+      React hydrates and are what any crawler that doesn't execute JavaScript
+      (most social-card scrapers: Facebook, Slack, LinkedIn, Discord, iMessage)
+      will always see, regardless of which route was requested. Google and
+      Bing render JS and will pick up the per-route <title>/meta set by
+      src/lib/seo.tsx once the page mounts.
+
+      Keep this in sync with the Home page's <Seo> props, since it doubles as
+      the homepage's tags and the universal social-share fallback.
+    -->
+    <meta name="description" content="Wirby is a subscription tracker and bill reminder app. Track subscriptions, bills, renewals, warranties, and deadlines in one ranked list, so nothing lapses without you knowing." />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#f3f3ed" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href="https://wirby.app/" />
+    <title>Wirby — Subscription, Bill & Renewal Tracker</title>
+
+    <!-- Open Graph / social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Wirby" />
+    <meta property="og:title" content="Wirby — Subscription, Bill & Renewal Tracker" />
+    <meta property="og:description" content="Track subscriptions, bills, renewals, warranties, and deadlines in one ranked list. Wirby flags what needs attention before it costs you." />
+    <meta property="og:url" content="https://wirby.app/" />
+    <meta property="og:image" content="https://wirby.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Wirby — Subscription, Bill & Renewal Tracker" />
+    <meta name="twitter:description" content="Track subscriptions, bills, renewals, warranties, and deadlines in one ranked list. Flagged before they cost you." />
+    <meta name="twitter:image" content="https://wirby.app/og-image.png" />
+
+    <!--
+      Site-wide structured data. Scoped to entities true on every page
+      (who Wirby is, what the site is) so it never conflicts with the more
+      specific SoftwareApplication/FAQPage schema injected per-route.
+      No sameAs/social links are added since none exist yet — don't fabricate.
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Wirby",
+        "url": "https://wirby.app",
+        "email": "support@wirby.app",
+        "description": "Wirby is a personal admin dashboard for tracking subscriptions, bills, renewals, warranties, and deadlines."
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Wirby",
+        "url": "https://wirby.app"
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "name": "wirby",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && node scripts/check-legal-placeholders.mjs && vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fontsource-variable/instrument-sans": "^5.2.5",
+    "@fontsource-variable/newsreader": "^5.2.5",
+    "@fontsource-variable/spline-sans-mono": "^5.2.5",
+    "@phosphor-icons/react": "^2.1.7",
+    "@supabase/supabase-js": "^2.110.0",
+    "pdfjs-dist": "^4.10.38",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.10",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.5.2",
+    "sharp": "^0.34.5",
+    "tailwindcss": "^4.1.10",
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5"
+  }
+}
