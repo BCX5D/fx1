@@ -47,7 +47,7 @@ const PRICING_JSONLD = [
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     name: "Wirby",
-    url: "https://wirby.app/pricing",
+    url: "https://www.wirby.app/pricing",
     applicationCategory: "FinanceApplication",
     operatingSystem: "Web",
     offers: [

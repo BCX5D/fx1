@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /app
 
-Sitemap: https://wirby.app/sitemap.xml
+Sitemap: https://www.wirby.app/sitemap.xml

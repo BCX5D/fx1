@@ -14,7 +14,7 @@ import { useEffect } from "react";
  * removes nothing another page didn't put there itself (idempotent).
  */
 
-const SITE_URL = "https://wirby.app";
+const SITE_URL = "https://www.wirby.app";
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
 
 export interface SeoProps {

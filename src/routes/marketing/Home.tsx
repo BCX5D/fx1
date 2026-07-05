@@ -14,7 +14,7 @@ const HOME_JSONLD = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   name: "Wirby",
-  url: "https://wirby.app",
+  url: "https://www.wirby.app",
   applicationCategory: "FinanceApplication",
   operatingSystem: "Web",
   description:
