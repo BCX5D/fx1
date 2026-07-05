@@ -12,6 +12,7 @@ import { SignIn } from "./routes/auth/SignIn";
 import { SignUp } from "./routes/auth/SignUp";
 import { ForgotPassword } from "./routes/auth/ForgotPassword";
 import { ResetPassword } from "./routes/auth/ResetPassword";
+import { Confirmed } from "./routes/auth/Confirmed";
 import { AppShell } from "./components/app/AppShell";
 import { Dashboard } from "./routes/app/Dashboard";
 import { AddSource } from "./routes/app/AddSource";
@@ -71,6 +72,7 @@ export default function App() {
             <Route path="/signup" element={<SignUp />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/confirmed" element={<Confirmed />} />
             <Route path="/app" element={<RequireAuth />}>
               <Route element={<OnboardingGate mode="onboarding" />}>
                 <Route path="onboarding" element={<Onboarding />} />

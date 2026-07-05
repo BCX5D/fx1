@@ -321,7 +321,17 @@ const supabaseAuthAdapter: AuthAdapter = {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
-      options: { data: { name: name.trim() }, captchaToken },
+      options: {
+        data: { name: name.trim() },
+        captchaToken,
+        // Where the confirmation email's link lands after Supabase verifies
+        // the token server-side. Without this it defaults to the dashboard's
+        // Site URL (the marketing homepage), which is a flat, unbranded
+        // landing after a signup -- /confirmed shows a real "you're in"
+        // screen instead. Must be added to Authentication > URL Configuration
+        // > Redirect URLs in the Supabase dashboard, or Supabase rejects it.
+        emailRedirectTo: `${window.location.origin}/confirmed`,
+      },
     });
     if (error) throw new Error(friendlyAuthError(error.message));
     if (!data.session) {
