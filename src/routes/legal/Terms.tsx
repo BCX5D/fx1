@@ -13,7 +13,7 @@ export function Terms() {
     >
       <LP>
         These Terms of Service ("Terms") govern your use of Wirby, operated by{" "}
-        <strong className="text-alert-700">[LAUNCH-BLOCKING PLACEHOLDER: LEGAL ENTITY NAME]</strong>{" "}
+        Wirby{" "}
         ("Wirby", "we", "us"), including the website at wirby.app and the Wirby
         application (together, the "Service"). By creating an account or using
         the Service, you agree to these Terms. If you do not agree, do not use
@@ -120,7 +120,7 @@ export function Terms() {
           deadlines, arising from your use of the Service. Our total aggregate
           liability for any claim relating to the Service is limited to the amount
           you paid us in the 12 months before the claim arose, or{" "}
-          <strong className="text-alert-700">[LAUNCH-BLOCKING PLACEHOLDER: CURRENCY AND AMOUNT, e.g. USD 50]</strong>{" "}
+          USD 50{" "}
           if you are on the Free plan.
         </LP>
         <LP>
@@ -144,7 +144,7 @@ export function Terms() {
       <LSection id="governing-law" title="11. Governing law">
         <LP>
           These Terms are governed by the laws of{" "}
-          <strong className="text-alert-700">[LAUNCH-BLOCKING PLACEHOLDER: GOVERNING JURISDICTION, e.g. Ireland]</strong>,
+          Bermuda,
           without regard to conflict-of-law principles, except where local
           consumer-protection law gives you additional rights that cannot be
           waived — those rights are unaffected by this section.

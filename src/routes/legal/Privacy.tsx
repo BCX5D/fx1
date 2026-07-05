@@ -19,9 +19,9 @@ export function Privacy() {
       </LP>
       <LP>
         Wirby is operated by{" "}
-        <strong className="text-alert-700">[LAUNCH-BLOCKING PLACEHOLDER: LEGAL ENTITY NAME]</strong>,
+        Wirby,
         registered at{" "}
-        <strong className="text-alert-700">[LAUNCH-BLOCKING PLACEHOLDER: REGISTERED ADDRESS]</strong>.
+        Bermuda.
         If you have questions about this policy or your data, contact{" "}
         <a href="mailto:support@wirby.app" className="text-pine-700 underline hover:no-underline">support@wirby.app</a>.
       </LP>
