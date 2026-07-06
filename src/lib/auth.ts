@@ -29,6 +29,34 @@ export class EmailConfirmationRequiredError extends Error {
   }
 }
 
+/**
+ * Thrown by signUp() when the email already belongs to a confirmed account.
+ * Supabase's signUp() call does not surface this as an `error` -- it returns
+ * success with no new session, exactly like the real "check your inbox" case
+ * (see EmailConfirmationRequiredError), specifically to avoid leaking account
+ * existence via an error message. The one reliable client-side signal to
+ * distinguish the two is `data.user.identities`: it comes back as an EMPTY
+ * array only when the account already existed and was already confirmed
+ * (a brand-new signup's identities array is non-empty). See Supabase's docs:
+ * "If you try to create an email account after previously signing up... you'll
+ * receive an obfuscated user response with no verification email sent."
+ *
+ * Showing this distinctly on the SIGNUP form is a deliberate, scoped tradeoff:
+ * it does confirm to a visitor that a given email has a Wirby account, which
+ * is a mild enumeration signal. That's treated as acceptable specifically
+ * here (matching common practice, e.g. GitHub's signup form) because it only
+ * applies to the signup flow; sign-in failures and password-reset requests
+ * still give zero indication either way (see friendlyAuthError and
+ * requestPasswordReset below), which is where enumeration protection matters
+ * more since those are the endpoints an attacker would actually probe.
+ */
+export class EmailAlreadyRegisteredError extends Error {
+  constructor() {
+    super("An account with this email already exists. Try signing in instead.");
+    this.name = "EmailAlreadyRegisteredError";
+  }
+}
+
 export interface AuthAdapter {
   readonly mode: "local" | "server";
   /**
@@ -346,10 +374,14 @@ const supabaseAuthAdapter: AuthAdapter = {
     });
     if (error) throw new Error(friendlyAuthError(error.message));
     if (!data.session) {
-      // Email confirmation is enabled on the project; no session is returned yet.
-      // This is a distinct, recognizable error type -- not a real failure --
-      // so the UI can show a calm "check your inbox" state instead of the
-      // shared red error banner.
+      // No session came back. Two distinct cases produce this, and Supabase
+      // only lets us tell them apart via `identities`: empty means the
+      // account already existed and was already confirmed (see
+      // EmailAlreadyRegisteredError above); non-empty/absent means this is a
+      // genuinely new signup awaiting confirmation.
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        throw new EmailAlreadyRegisteredError();
+      }
       throw new EmailConfirmationRequiredError();
     }
     return toSession(data.session);
