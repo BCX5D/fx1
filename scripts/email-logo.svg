@@ -1,0 +1,12 @@
+<svg width="440" height="120" viewBox="0 0 440 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Logo lockup for email headers: mark + wordmark, transparent background so it
+       sits correctly on the email's paper-colored body background. Scaled up from
+       the app's LogoMark (src/components/ui/Logo.tsx) and favicon.svg, kept pixel-
+       proportional to those so the brand mark stays consistent everywhere. -->
+  <g transform="translate(4,10)">
+    <rect width="100" height="100" rx="25" fill="#1a4531"/>
+    <polyline points="22,34 34,66 50,41 66,66 78,34" fill="none" stroke="#f5f5f0" stroke-width="8.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="76.5" cy="26" r="6.9" fill="#d9a441"/>
+  </g>
+  <text x="124" y="76" font-family="Georgia, 'Times New Roman', serif" font-size="54" font-weight="500" fill="#18211b">Wirby</text>
+</svg>

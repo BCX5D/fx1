@@ -117,13 +117,24 @@ const buttonStyle =
   "text-decoration:none;font-weight:600;font-family:Arial,Helvetica,sans-serif;font-size:15px;";
 const mutedStyle = "color:#6b7280;font-size:13px;margin-top:24px;";
 
+/**
+ * Hosted logo image for the email header. Must be a fully-qualified, publicly
+ * reachable URL -- email clients fetch images over HTTP, they can't read
+ * files from this function or the app bundle. Generated from
+ * scripts/email-logo.svg via scripts/generate-email-logo.mjs; regenerate and
+ * redeploy this function if the logo changes. Falls back to the plain
+ * wordmark via the img's alt text if a client blocks images by default
+ * (common for first-open in Gmail/Outlook), which is normal and expected.
+ */
+const LOGO_URL = "https://www.wirby.app/email-logo.png";
+
 /** Minimal inline-styled HTML shell -- email clients strip <style> blocks unreliably, so everything is inline. */
 function emailShell(bodyHtml: string): string {
   return `<!doctype html>
 <html>
   <body style="margin:0;padding:0;background:#f3f3ed;font-family:Arial,Helvetica,sans-serif;color:#18211b;">
     <div style="max-width:480px;margin:0 auto;padding:40px 24px;">
-      <div style="font-size:18px;font-weight:700;color:#1a4531;margin-bottom:24px;">Wirby</div>
+      <img src="${LOGO_URL}" width="132" height="36" alt="Wirby" style="display:block;margin-bottom:28px;border:0;outline:none;" />
       <div style="background:#fcfcf9;border:1px solid #dfe2d6;border-radius:16px;padding:32px;font-size:15px;line-height:1.6;">
         ${bodyHtml}
       </div>
