@@ -301,14 +301,25 @@ function toSession(sb: SupabaseSession): Session {
   };
 }
 
-/** Map Supabase's auth error messages to Wirby's calm, non-enumerating copy. */
+/**
+ * Map Supabase's auth error messages to Wirby's calm, non-enumerating copy.
+ *
+ * Order matters here: rate-limit and "too many requests" checks must run
+ * BEFORE the generic "email" substring check below, since Supabase's actual
+ * message for a rate limit is literally "email rate limit exceeded" / "over
+ * email send rate limit" -- that contains the word "email" and would
+ * otherwise get misclassified as "that email address does not look right",
+ * which is a real bug that shipped and confused real signup attempts.
+ */
 function friendlyAuthError(message: string): string {
   const m = message.toLowerCase();
+  if (m.includes("rate limit") || m.includes("too many requests"))
+    return "Too many attempts. Please wait a few minutes and try again.";
   if (m.includes("already registered") || m.includes("already exists"))
     return "An account with this email already exists. Try signing in.";
   if (m.includes("invalid login")) return "Email or password is incorrect.";
   if (m.includes("password")) return "Password needs at least 8 characters.";
-  if (m.includes("email")) return "That email address does not look right.";
+  if (m.includes("invalid") && m.includes("email")) return "That email address does not look right.";
   return message;
 }
 
