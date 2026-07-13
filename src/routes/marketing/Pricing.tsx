@@ -32,7 +32,7 @@ const FAQ = [
   },
   {
     q: "How does billing work?",
-    a: "Plus is billed monthly through Paddle, our checkout and billing partner, and you can cancel anytime. Downgrading keeps your first 25 items active and archives nothing.",
+    a: "Plus is billed monthly through Stripe, our payment processor, and you can cancel anytime. Downgrading keeps your first 25 items active and archives nothing.",
   },
   {
     q: "Can Wirby track warranties and renewals, not just bills?",

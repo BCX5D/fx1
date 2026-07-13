@@ -25,10 +25,12 @@ Everything the code needs is built and deployed. These are the steps only you ca
    - `VITE_AUTH_MODE=supabase`
    - `VITE_SUPABASE_URL=https://kfhbmfaikejsfoxngmue.supabase.co`
    - `VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`
-   - `VITE_PADDLE_CLIENT_TOKEN=live_...` (or `test_...` in sandbox — see "Payments" below)
-   - `VITE_PADDLE_ENVIRONMENT=production` (set to `sandbox` only for a staging deploy)
-   - `VITE_PADDLE_PLUS_PRICE_ID=pri_...`
    - `VITE_PLAUSIBLE_DOMAIN=wirby.app` (optional analytics)
+
+   There is intentionally **no client-side Stripe variable** — checkout uses the
+   server-generated Stripe Checkout redirect flow, so no Stripe key ships in the
+   browser bundle. All Stripe secrets live in Supabase Edge Function secrets
+   (see "Payments" below).
 4. Point `wirby.app` at the host (bought on Porkbun/Cloudflare).
 
 ### 2. Supabase auth settings (dashboard)
@@ -47,73 +49,65 @@ Everything the code needs is built and deployed. These are the steps only you ca
   and leaked-password protection are actually toggled on in the dashboard today.
   Confirm both manually before launch.
 
-### 3. Payments (Paddle Billing)
+### 3. Payments (Stripe)
 
-Wirby bills through **Paddle**, not Stripe. Paddle acts as merchant of record for
-Wirby Plus (it is the legal seller you're billed by, and it handles sales tax/VAT),
-which is also why the legal pages (`Terms.tsx`, `Privacy.tsx`, `RefundPolicy.tsx`)
-name Paddle directly rather than describing it as a generic "payment processor."
+Wirby bills through **Stripe**. Stripe is the **payment processor**, not a
+merchant of record — **Wirby is the seller of record** and is responsible for
+registering, collecting, and remitting any applicable sales tax/VAT (Stripe Tax
+can automate the calculation, but the obligation is Wirby's). The legal pages
+(`Terms.tsx`, `Privacy.tsx`, `RefundPolicy.tsx`) reflect this: they name Stripe
+as the payment processor and Wirby as the seller.
 
-The code is deployed: three billing Edge Functions (`paddle-customer`,
-`customer-portal`, `paddle-webhook`), the `lp_subscriptions` table, a server-side
+The code is deployed: three billing Edge Functions (`create-checkout`,
+`customer-portal`, `stripe-webhook`), the `lp_subscriptions` table, a server-side
 free-item-limit trigger, and the Settings UI (upgrade / manage subscription). A
-fourth Edge Function, `delete-account`, handles self-serve account deletion (see
-"Legal pages" below) and is unrelated to billing activation.
+fourth Edge Function, `delete-account`, handles self-serve account deletion and is
+unrelated to billing activation.
 
-**Why checkout looks different from a Stripe-style integration**: Paddle has no
-server-generated Checkout Session URL to redirect to. Checkout opens client-side via
-Paddle.js (an overlay), which is why `VITE_PADDLE_CLIENT_TOKEN` is a public,
-client-safe token — same trust level as the Supabase publishable key — rather than a
-secret. Before opening that overlay, the client calls the `paddle-customer` Edge
-Function (JWT-verified) to establish a server-trusted Paddle customer id for the
-signed-in user; the browser never invents or supplies that id itself. The purchase
-itself is never "call an API, get a subscription back" — Paddle creates the
-subscription asynchronously and reports it through `paddle-webhook`, which is the
-only thing that ever flips `lp_subscriptions.plan` to `plus`.
+**Checkout shape**: standard Stripe redirect flow. `create-checkout`
+(JWT-verified) creates-or-fetches a Stripe customer for the signed-in user, stores
+the link in `lp_subscriptions.provider_customer_id`, builds a Checkout Session, and
+returns its hosted URL; the client redirects the browser there. Stripe returns the
+user to `/app/settings?checkout=success`. The subscription is created
+asynchronously and reported through `stripe-webhook`, which is the only thing that
+ever flips `lp_subscriptions.plan` to `plus`. No Stripe.js runs in the browser, so
+there is no client-side Stripe key.
 
 To activate billing:
 
-1. Create a **Paddle account** (start in [Sandbox](https://developer.paddle.com/sdks/sandbox)
-   to test, then request a live/production account for real payments — Paddle
-   reviews and approves live accounts, which can take a few business days).
-2. Create a Product "Wirby Plus" with a **$6/mo recurring price** under
-   Paddle > Catalog > Products → copy its price ID (`pri_...`).
-3. Under Paddle > Checkout > Checkout settings, set and get approval for your
-   **default payment link domain** (`wirby.app`, or `localhost` while testing in
-   sandbox) — Paddle.js checkouts won't open on an unapproved domain.
-4. Create a **client-side token** (Paddle > Developer tools > Authentication) and
-   set it as `VITE_PADDLE_CLIENT_TOKEN` in your host's env vars. This is safe to
-   ship in the browser bundle.
-5. Create an **API key** (Paddle > Developer tools > Authentication → API keys) for
-   server-side use.
-6. Add a webhook destination in Paddle (Developer tools → Notifications) pointing at:
-   `https://kfhbmfaikejsfoxngmue.supabase.co/functions/v1/paddle-webhook`
-   Subscribe to: `subscription.created`, `subscription.updated`,
-   `subscription.canceled`. Copy the destination's **secret key** (`pdl_ntfset_...`)
-   — this is different from the API key above.
-7. Set the Edge Function **secrets** (Supabase dashboard → Edge Functions → Secrets,
+1. Create a **Stripe account** (use test mode to start; live mode needs business
+   details + bank account).
+2. Create a Product "Wirby Plus" with a **$6/mo recurring price** → copy its price
+   ID (`price_...`).
+3. Create a **secret API key** (Developers → API keys, `sk_test_...` / `sk_live_...`).
+4. Add a **webhook endpoint** (Developers → Webhooks) pointing at:
+   `https://kfhbmfaikejsfoxngmue.supabase.co/functions/v1/stripe-webhook`
+   Subscribe to: `checkout.session.completed`, `customer.subscription.created`,
+   `customer.subscription.updated`, `customer.subscription.deleted`. Copy the
+   endpoint's **signing secret** (`whsec_...`).
+5. In the **Customer Portal** settings (Billing → Customer portal), enable cancel /
+   update-payment-method and save — required for the "Manage subscription" button.
+6. Set the Edge Function **secrets** (Supabase dashboard → Edge Functions → Secrets,
    or `supabase secrets set`):
-   - `PADDLE_API_KEY=...` (from step 5)
-   - `PADDLE_WEBHOOK_SECRET=pdl_ntfset_...` (from step 6)
-   - `PADDLE_ENVIRONMENT=production` (set to `sandbox` while testing; controls which
-     Paddle API host `paddle-customer` and `customer-portal` call)
+   - `STRIPE_SECRET_KEY=sk_...` (from step 3)
+   - `STRIPE_PLUS_PRICE_ID=price_...` (from step 2)
+   - `STRIPE_WEBHOOK_SECRET=whsec_...` (from step 4)
+   - `APP_URL=https://www.wirby.app` (used for checkout success/cancel/return URLs)
    (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` are injected
    automatically.)
-8. Set frontend env vars: `VITE_PADDLE_CLIENT_TOKEN`, `VITE_PADDLE_ENVIRONMENT`,
-   `VITE_PADDLE_PLUS_PRICE_ID=pri_...` (from step 2).
-9. Test in sandbox with [Paddle's test card](https://developer.paddle.com/concepts/payment-methods/card)
-   (`4242 4242 4242 4242`, any future expiry, CVC `100`). On success the webhook
-   flips `lp_subscriptions.plan` to `plus` and the app unlocks unlimited items.
-10. Before going live: switch `PADDLE_ENVIRONMENT` / `VITE_PADDLE_ENVIRONMENT` to
-    `production`, and swap in a live client-side token, live API key, and a webhook
-    destination + secret created against the live (not sandbox) Paddle account —
-    sandbox and live are entirely separate systems with separate IDs and keys.
+7. Test with [Stripe's test card](https://docs.stripe.com/testing) (`4242 4242 4242
+   4242`, any future expiry, any CVC). On success the webhook flips
+   `lp_subscriptions.plan` to `plus` and the app unlocks unlimited items.
+8. Before going live: swap the test key/price/webhook for their **live-mode**
+   equivalents (test and live are entirely separate in Stripe, with separate IDs
+   and keys) and confirm the live webhook endpoint + signing secret.
 
-**Security**: only the client-side token (public by design) ever touches the
-frontend. The API key and webhook secret live only in Edge Function secrets. The
-webhook is signature-verified (manual HMAC-SHA256 over `Paddle-Signature`, with a
-5-second replay-attack tolerance, per Paddle's documented algorithm) and writes via
-service role, exactly like the Stripe webhook did before it.
+**Security**: no Stripe key ever touches the frontend. The secret key and webhook
+signing secret live only in Edge Function secrets. The webhook is
+signature-verified (manual HMAC-SHA256 over `Stripe-Signature`, 300-second
+tolerance, per Stripe's documented algorithm — see
+`supabase/functions/_shared/stripeSignature.ts`, unit-tested in
+`tests/stripeSignature.test.ts`) and writes via service role.
 
 ### 4. Legal pages (required before accepting real payments)
 
@@ -138,16 +132,15 @@ promise something real: account deletion in Settings is fully implemented
 2. Have a lawyer, or a service like [iubenda](https://www.iubenda.com), review
    the final text — especially liability limits and governing law, which are
    jurisdiction-specific.
-3. Paddle checks that these links work and are accurate before approving a live
-   account, so this must be done before step 3 (Payments) goes live for real
-   money. Paddle also requires the Terms/Privacy pages to correctly identify
-   Paddle as merchant of record for the subscription — already done in this
-   codebase; keep it that way if the copy is edited later.
+3. With Stripe as processor (not merchant of record), **Wirby is the seller of
+   record** and owns sales-tax/VAT registration and remittance. The Terms/Privacy/
+   Refund pages now say exactly that — keep them accurate if the copy is edited
+   later, and consider enabling Stripe Tax to automate calculation.
 4. Keep the pages in sync with the product: if pricing, data retention, or
    sub-processors change, update the matching section the same day.
 
 The Privacy Policy already documents the real sub-processors in use (Supabase,
-Paddle, Plausible) and is honest that extraction is deterministic pattern
+Stripe, Resend, Plausible) and is honest that extraction is deterministic pattern
 matching, not AI — don't let future copy drift from that.
 
 ### 5. Account deletion (implemented)
@@ -156,18 +149,41 @@ Settings → Danger zone → "Delete my account" calls a fourth Edge Function,
 `delete-account`, which:
 - Verifies the caller's own Supabase JWT (never trusts a user id from the request body).
 - Refuses to proceed if the user has an active/trialing Wirby Plus subscription,
-  so Paddle stays in a clean state — they're asked to cancel via the customer
+  so Stripe stays in a clean state — they're asked to cancel via the customer
   portal first.
 - Deletes the `auth.users` row via the service-role admin API, which cascades
   (`on delete cascade`) through `lp_items`, `lp_audit`, `lp_prefs`, and
   `lp_subscriptions`.
 The client-side UI requires typing "delete" to confirm before the call fires.
 
-### 6. Still needs a provider (not blocking launch)
+### 6. Email reminders (implemented)
 
-- **Email reminders**: prefs are stored; add a mail provider (Resend/Postmark) + a
-  scheduled function reading `src/lib/urgency.ts`. Pricing and Settings copy have
-  been checked and do not currently promise email delivery is active.
+Reminder delivery is built and deployed. The `send-reminders` Edge Function reads
+each user's `lp_prefs` + active `lp_items`, computes urgency (the same logic as
+`src/lib/urgency.ts`, ported inline for Deno), and sends via **Resend**:
+
+- a **due-soon alert** on any day the user has an overdue / due-today / due-soon
+  item, and
+- a **weekly digest** each Monday of the next 30 days.
+
+Both are deduped per day via `lp_prefs.last_due_soon_sent` / `last_digest_sent`,
+so a double cron fire can't double-send. A daily **pg_cron** job (13:00 UTC, see
+migration `20260713123000_schedule_send_reminders.sql`) POSTs the function with an
+`x-cron-secret` header read from Vault.
+
+To activate:
+
+1. Ensure `RESEND_API_KEY` is set as an Edge Function secret (already used by the
+   `send-email` auth-email hook). Optionally set `SEND_EMAIL_FROM` to a verified
+   Resend sender like `Wirby <noreply@wirby.app>`.
+2. Set the `CRON_SECRET` Edge Function secret to match the Vault secret
+   `wirby_cron_secret` created during setup. To read the generated value once, run
+   in the SQL editor:
+   `select decrypted_secret from vault.decrypted_secrets where name = 'wirby_cron_secret';`
+   and paste it into the `CRON_SECRET` Edge Function secret. (If the Vault secret
+   doesn't exist yet, create it: `select vault.create_secret(encode(extensions.gen_random_bytes(32),'hex'), 'wirby_cron_secret', 'send-reminders cron');`)
+3. To send a test run immediately, POST the function with header
+   `x-cron-secret: <value>` and body `{"mode":"daily"}` or `{"mode":"weekly"}`.
 
 ## Marketing (easiest first)
 
@@ -193,7 +209,7 @@ The client-side UI requires typing "delete" to confirm before the call fires.
 | Ingestion | `/app/add` | Upload (PDF/TXT/EML/MD/CSV), paste, or manual. Extraction with per-field confidence; nothing saves without review. PDF page limit is plan-aware (20 pages Free, 75 Plus) |
 | Item detail | `/app/items/:id` | Edit, complete, snooze, archive, delete; source snippet; per-item history |
 | Search & archive | `/app/search` | Text search, status tabs, type and urgency filters, undated filter |
-| Settings | `/app/settings` | Plan/billing (upgrade via Paddle overlay checkout, manage via Paddle customer portal), reminder prefs, CSV/JSON export, sample data, delete-all-items, and real account deletion (type-to-confirm, calls a service-role Edge Function) |
+| Settings | `/app/settings` | Plan/billing (upgrade via Stripe Checkout redirect, manage via Stripe customer portal), reminder prefs, CSV/JSON export, sample data, delete-all-items, and real account deletion (type-to-confirm, calls a service-role Edge Function) |
 | Audit log | `/app/audit` | Last 500 events: item changes, sign-ins, data events |
 
 ### Core behaviors worth knowing
@@ -312,7 +328,7 @@ below the store interface.
   provider triggered by a scheduled job reading the urgency math (`src/lib/urgency.ts`).
   Not sold on the pricing page — Plus currently only promises unlimited items and
   priority PDF extraction, both of which are actually implemented.
-- **Billing**: pricing page ships; Paddle Checkout attaches to the Plus plan and is
+- **Billing**: pricing page ships; Stripe Checkout attaches to the Plus plan and is
   fully wired end-to-end (see "Payments" above for the manual dashboard setup
   still required). No billing code was faked.
 - **Extraction** (`src/lib/extract.ts`): deterministic, in-browser, no model — by design.
@@ -329,8 +345,8 @@ step.
 - **Rate limiting on every Edge Function.** `lp_rate_limits` (service-role
   only, zero client policies) + `lp_check_rate_limit()` RPC implement a
   fixed-window counter. Limits: `delete-account` 5/hour/user,
-  `paddle-customer` 10/hour/user, `customer-portal` 20/hour/user,
-  `paddle-webhook` 60/hour/Paddle-customer-id. All fail CLOSED (a DB error
+  `create-checkout` 10/hour/user, `customer-portal` 20/hour/user,
+  `stripe-webhook` 120/hour/Stripe-customer-id. All fail CLOSED (a DB error
   counts as "not allowed", never "allowed"). Auth endpoints themselves
   (`signin`/`signup`/`recover`) are rate-limited by Supabase Auth directly —
   see "Manual setup" below to confirm the dashboard limits fit your launch.
@@ -343,12 +359,13 @@ step.
   rejects non-POST methods and oversized request bodies before doing any
   work; the webhook additionally caps payload size before touching the
   signature check.
-- **Fail-closed env var checks.** All four Edge Functions now throw at
-  startup (refuse to boot) if a required secret (`PADDLE_API_KEY`,
-  `PADDLE_WEBHOOK_SECRET`, Supabase URL/keys) is missing, instead of running
-  half-configured and failing confusingly on the first real request.
-- **Reduced PII in Edge Function logs.** `paddle-customer` and
-  `customer-portal` no longer log full Paddle API response bodies (which can
+- **Fail-closed env var checks.** Every Edge Function throws at startup
+  (refuses to boot) if a required secret (`STRIPE_SECRET_KEY`,
+  `STRIPE_WEBHOOK_SECRET`, `CRON_SECRET`, `RESEND_API_KEY`, Supabase URL/keys)
+  is missing, instead of running half-configured and failing confusingly on the
+  first real request.
+- **Reduced PII in Edge Function logs.** `create-checkout` and
+  `customer-portal` never log full Stripe API response bodies (which can
   carry customer email/billing data) on error — only status codes.
 - **Bounded database text/JSON fields.** `lp_items`, `lp_audit`, `lp_prefs`
   had no length caps on `title`/`vendor`/`notes`/`detail`/`email`/etc. A
@@ -365,7 +382,7 @@ step.
   and `public/_headers` (Netlify) so either deploy target in the README's
   go-live runbook gets the same protection:
   `Content-Security-Policy` (scoped to `'self'` plus the exact third-party
-  origins Wirby actually loads: Paddle.js/checkout, Plausible, optional
+  origins Wirby actually loads: Plausible, optional
   Cloudflare Turnstile, and the Supabase project), `X-Frame-Options: DENY` +
   `frame-ancestors 'none'` (clickjacking), `X-Content-Type-Options: nosniff`,
   `Referrer-Policy: strict-origin-when-cross-origin`, a restrictive
@@ -413,20 +430,16 @@ launch:
    never need to serve `wirby.app` over plain HTTP.
 6. **Confirm `supabase/config.toml` project_id matches what's actually
    linked** before running any `supabase db push` — see the existing note in
-   this README's "Backend setup" section. This audit found the *deployed*
-   database has one migration (`paddle_billing_provider`,
-   `20260704164714`) with no corresponding file in `supabase/migrations/` in
-   this checkout. That migration is already applied and the schema it
-   produced was verified directly against the live database, so production
-   is not at risk — but pull or regenerate that file so a future
-   `supabase db push` from this repo doesn't drift from what's live.
+   this README's "Backend setup" section. All migration files in
+   `supabase/migrations/` now match what's applied to the live database
+   (including the Stripe billing swap `20260713120000_stripe_billing_and_reminders.sql`
+   and the reminder cron `20260713123000_schedule_send_reminders.sql`).
 
 ### Known residual risks (not fixed in this pass, by design or scope)
 
-- **Paddle checkout / customer-portal links open Paddle-hosted pages** — this
-  is documented, expected behavior for a merchant-of-record integration, not
-  a gap. The CSP's `frame-src` is scoped narrowly to Paddle's own checkout/
-  buy domains for exactly this reason.
+- **Stripe checkout / customer-portal open Stripe-hosted pages** via full
+  browser navigation (not an embedded iframe), so no Stripe origin is needed in
+  the CSP `frame-src` at all — this is expected, documented behavior.
 - **No CSRF token on Edge Functions**: not needed. Every sensitive Edge
   Function requires a Supabase JWT sent as `Authorization: Bearer`, never a
   cookie, so there is no ambient credential for a cross-site request to ride

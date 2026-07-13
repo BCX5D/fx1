@@ -43,9 +43,9 @@ export function Terms() {
       <LSection id="plans-billing" title="3. Plans and billing">
         <LUl>
           <li><strong>Free plan:</strong> up to 25 tracked items, enforced by the Service. No payment method required.</li>
-          <li><strong>Wirby Plus:</strong> a paid monthly subscription billed in advance through our reseller, Paddle.com Market Ltd ("Paddle"). Pricing is shown on the <Link to="/pricing" className="text-pine-700 underline hover:no-underline">Pricing page</Link> and may change with notice; changes apply from your next billing cycle.</li>
+          <li><strong>Wirby Plus:</strong> a paid monthly subscription billed in advance. Payments are processed by our payment processor, Stripe; Wirby is the seller of record. Pricing is shown on the <Link to="/pricing" className="text-pine-700 underline hover:no-underline">Pricing page</Link> and may change with notice; changes apply from your next billing cycle.</li>
           <li>Subscriptions renew automatically each billing period until cancelled.</li>
-          <li>You can cancel anytime from Settings via Paddle's customer portal. Cancelling stops future renewals; see our <Link to="/refund-policy" className="text-pine-700 underline hover:no-underline">Refund Policy</Link> for what happens to the current billing period.</li>
+          <li>You can cancel anytime from Settings via Stripe's customer portal. Cancelling stops future renewals; see our <Link to="/refund-policy" className="text-pine-700 underline hover:no-underline">Refund Policy</Link> for what happens to the current billing period.</li>
           <li>Downgrading from Plus to Free keeps your existing items but new items are subject to the Free plan's 25-item limit going forward.</li>
         </LUl>
       </LSection>
@@ -91,14 +91,14 @@ export function Terms() {
 
       <LSection id="third-party" title="7. Third-party services">
         <LP>
-          Payments for Wirby Plus are handled by Paddle, who acts as the
-          merchant of record and reseller for these subscriptions — Paddle,
-          not Wirby, is the seller you are billed by and who handles applicable
-          sales tax/VAT on the purchase. Infrastructure is provided by Supabase.
-          Both operate under their own respective terms. We are not responsible
-          for outages or issues originating from these third-party providers,
-          though we will work to restore the Service as quickly as we
-          reasonably can.
+          Payments for Wirby Plus are processed by Stripe. Wirby is the seller
+          of record for these subscriptions and is responsible for applicable
+          sales tax/VAT; Stripe acts only as the payment processor. Core
+          infrastructure is provided by Supabase, and transactional email by
+          Resend. Each operates under its own respective terms. We are not
+          responsible for outages or issues originating from these third-party
+          providers, though we will work to restore the Service as quickly as
+          we reasonably can.
         </LP>
       </LSection>
 

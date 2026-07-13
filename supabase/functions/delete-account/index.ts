@@ -16,12 +16,12 @@ import {
  * Order of operations matters: lp_items / lp_audit / lp_prefs / lp_subscriptions
  * all have `on delete cascade` foreign keys to auth.users(id), so deleting the
  * auth user is sufficient to remove every owned row. Deleting the
- * lp_subscriptions row's Paddle link explicitly first is NOT needed -- Paddle
+ * lp_subscriptions row's Stripe link explicitly first is NOT needed -- Stripe
  * itself is untouched by this (cancelling a live subscription is a separate,
  * deliberate action via the customer portal, not folded into account deletion
  * silently). If the user still has an active paid subscription we require
  * them to cancel it first, so they don't lose the ability to get a refund
- * receipt or manage a still-active Paddle subscription after their account
+ * receipt or manage a still-active Stripe subscription after their account
  * row disappears.
  */
 
@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     if (!rl.allowed) return rl.response!;
 
     // Refuse to delete an account with a live paid subscription. The user
-    // must cancel in the Paddle customer portal first so Paddle stays in a
+    // must cancel in the Stripe customer portal first so Stripe stays in a
     // clean state and they keep access to their own billing history/receipts.
     const { data: sub } = await admin
       .from("lp_subscriptions")

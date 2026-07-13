@@ -1,6 +1,5 @@
 /**
- * Thin Cloudflare Turnstile loader, mirroring the pattern already used for
- * Paddle.js in src/lib/paddle.ts: no new npm dependency, load the vendor
+ * Thin Cloudflare Turnstile loader: no new npm dependency, load the vendor
  * script lazily, and expose a small render/reset API.
  *
  * Why not @marsidev/react-turnstile: one more third-party package for a

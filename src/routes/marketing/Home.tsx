@@ -1,8 +1,11 @@
+import { useEffect } from "react";
 import { ArrowRight, Check, FileArrowUp, ListMagnifyingGlass } from "@phosphor-icons/react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
 import { MiniDashboard } from "../../components/marketing/MiniDashboard";
 import { UrgencyPill } from "../../components/app/UrgencyPill";
+import { KindIcon } from "../../components/app/KindIcon";
+import { KIND_LABEL, type ItemKind } from "../../lib/types";
 import { Seo } from "../../lib/seo";
 
 // Kept intentionally minimal: only claims that match what's actually visible
@@ -10,30 +13,108 @@ import { Seo } from "../../lib/seo";
 // schema there — mirroring it here would describe content this page doesn't
 // show, which is the kind of markup/content mismatch Google explicitly
 // penalizes.
-const HOME_JSONLD = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: "Wirby",
-  url: "https://www.wirby.app",
-  applicationCategory: "FinanceApplication",
-  operatingSystem: "Web",
-  description:
-    "Wirby is a personal admin dashboard that tracks subscriptions, bills, renewals, warranties, and deadlines, and ranks them by urgency.",
-  offers: {
-    "@type": "Offer",
-    name: "Free plan",
-    price: "0",
-    priceCurrency: "USD",
-    description: "Free for up to 25 tracked items.",
+const HOME_JSONLD = [
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "Wirby",
+    url: "https://www.wirby.app",
+    applicationCategory: "FinanceApplication",
+    operatingSystem: "Web",
+    description:
+      "Wirby is a subscription tracker and bill reminder app that tracks subscriptions, bills, renewals, warranties, and deadlines, and ranks them by urgency.",
+    offers: {
+      "@type": "Offer",
+      name: "Free plan",
+      price: "0",
+      priceCurrency: "USD",
+      description: "Free for up to 25 tracked items.",
+    },
   },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "What is Wirby?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Wirby is a subscription tracker and bill reminder app. It brings your bills, subscriptions, renewals, warranties, and deadlines into one dashboard, ranked by how soon they're due, so nothing lapses without you knowing.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Is Wirby a bill reminder app?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Yes. Wirby reminds you before bills, subscriptions, and renewals are due. Add an item by upload, paste, or manual entry, and Wirby tracks the due date and alerts you ahead of time.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Can Wirby track recurring subscriptions and renewals?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Yes. Subscriptions and renewals are core to Wirby. It reads the cadence (weekly, monthly, quarterly, yearly) and rolls recurring items forward automatically after you handle them, and totals your recurring spend into one monthly number.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Do I need to connect my bank account?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "No. Wirby works from what you give it directly: a document upload, pasted text, or a manual entry. There is no bank connection required to get value.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Is my data private and secure?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Document extraction runs in your browser, not on a server, and only the fields you confirm are saved. Every sign-in, edit, export, and deletion is recorded in an audit trail you can read, and you can export or delete your data at any time.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "How much does Wirby cost?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Wirby is free for up to 25 tracked items. Wirby Plus removes that limit for $6 per month. See the pricing page for full details.",
+        },
+      },
+    ],
+  },
+];
+
+const KIND_COPY: Record<ItemKind, string> = {
+  subscription: "Streaming, software, and memberships. Anything that renews on a cadence.",
+  bill: "Utilities, phone, and rent. Anything with a due date and an amount.",
+  renewal: "Insurance, domains, and licenses. Anything that lapses if you miss it.",
+  warranty: "Appliances and electronics. Anything with a coverage window worth remembering.",
+  deadline: "Taxes, applications, and permits. Anything with a date and no cadence.",
+  document: "Contracts and statements. Anything you just want stored where you can find it.",
 };
 
+const KIND_ORDER: ItemKind[] = ["subscription", "bill", "renewal", "warranty", "deadline", "document"];
+
 export function Home() {
+  const { hash } = useLocation();
+
+  // React Router doesn't scroll to in-page anchors on its own (that's a
+  // browser default for full navigations only). Handle it for the footer's
+  // /#what-is-wirby and /#faq links so they actually land on the section.
+  useEffect(() => {
+    if (!hash) return;
+    const el = document.getElementById(hash.slice(1));
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [hash]);
+
   return (
     <>
       <Seo
-        title="Wirby — Subscription, Bill & Renewal Tracker"
-        description="Track subscriptions, bills, renewals, warranties, and deadlines in one ranked list. Wirby flags what needs attention before it costs you."
+        title="Wirby — Subscription Tracker & Bill Reminder App"
+        description="Wirby is a subscription tracker and bill reminder app. Track bills, subscriptions, renewals, and due dates in one dashboard ranked by urgency."
         path="/"
         jsonLd={HOME_JSONLD}
       />
@@ -42,18 +123,19 @@ export function Home() {
         <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[460px] bg-gradient-to-b from-pine-50/80 to-transparent" />
         <div className="relative mx-auto grid w-full max-w-[1200px] items-center gap-12 px-5 pb-24 pt-14 sm:px-8 lg:grid-cols-12 lg:gap-8 lg:pb-32 lg:pt-20">
           <div className="lg:col-span-5">
-            <h1 className="rise font-display text-5xl font-medium leading-[1.04] tracking-tight text-ink sm:text-6xl lg:text-[68px]">
-              Life admin,
+            <h1 className="rise font-display text-5xl font-medium leading-[1.04] tracking-tight text-ink sm:text-6xl lg:text-[64px]">
+              Track subscriptions, bills, and renewals
               <br />
-              <em className="pb-1 leading-[1.1] text-pine-700">off your mind.</em>
+              <em className="pb-1 leading-[1.1] text-pine-700">before they cost you.</em>
             </h1>
             <p className="rise mt-6 max-w-md text-lg leading-relaxed text-ink-soft" style={{ "--i": 1 } as React.CSSProperties}>
-              Bills, subscriptions, renewals, and deadlines in one calm place.
-              Wirby flags what needs attention before it costs you.
+              Wirby is a subscription tracker and bill reminder dashboard.
+              It ranks your renewals, due dates, and recurring payments by
+              urgency, so you always know what needs attention first.
             </p>
             <div className="rise mt-8 flex flex-wrap items-center gap-3" style={{ "--i": 2 } as React.CSSProperties}>
               <Button to="/signup" size="lg">
-                Start free
+                Start tracking free
                 <ArrowRight size={18} aria-hidden />
               </Button>
               <Button to="/pricing" size="lg" variant="secondary">
@@ -63,6 +145,39 @@ export function Home() {
           </div>
           <div className="rise lg:col-span-7 lg:pl-8" style={{ "--i": 3 } as React.CSSProperties}>
             <MiniDashboard />
+          </div>
+        </div>
+      </section>
+
+      {/* What is Wirby: explicit plain-language category definition for humans and crawlers */}
+      <section id="what-is-wirby" className="border-y border-line bg-panel">
+        <div className="mx-auto w-full max-w-[1200px] px-5 py-20 sm:px-8 lg:py-24">
+          <div className="max-w-2xl">
+            <h2 className="font-display text-[32px] font-medium leading-[1.18] tracking-tight text-ink sm:text-4xl">
+              What is Wirby?
+            </h2>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink-soft">
+              Wirby is a subscription tracker, bill tracker, and renewal tracker,
+              built into one due-date dashboard. If it has an amount and a date,
+              it belongs here, not scattered across inboxes, screenshots, and
+              bank statements.
+            </p>
+            <p className="mt-4 max-w-xl text-lg leading-relaxed text-ink-soft">
+              Add an item by uploading a document, pasting an email, or typing
+              it in yourself. Wirby reads the vendor, amount, due date, and
+              cadence, ranks it by urgency, and reminds you before it's due.
+            </p>
+          </div>
+          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {KIND_ORDER.map((kind) => (
+              <div key={kind} className="flex items-start gap-3.5 rounded-2xl border border-line bg-paper p-5">
+                <KindIcon kind={kind} />
+                <div>
+                  <h3 className="text-[15px] font-semibold tracking-tight text-ink">{KIND_LABEL[kind]}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-ink-faint">{KIND_COPY[kind]}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -89,7 +204,7 @@ export function Home() {
           <div className="lg:col-span-4">
             <div className="lg:sticky lg:top-28">
               <h2 className="font-display text-3xl font-medium tracking-tight text-ink sm:text-4xl">
-                From pile to plan in a minute.
+                How the bill and renewal tracker works.
               </h2>
               <p className="mt-4 max-w-sm text-[15px] leading-relaxed text-ink-soft">
                 No setup marathon. Upload one document or paste one email,
@@ -149,7 +264,7 @@ export function Home() {
       {/* Capabilities: bento with exact cell count and varied backgrounds */}
       <section className="mx-auto w-full max-w-[1200px] px-5 pb-20 sm:px-8 lg:pb-28">
         <h2 className="mb-3 max-w-lg font-display text-3xl font-medium tracking-tight text-ink sm:text-4xl">
-          Built for the thirty-second check-in.
+          A due-date dashboard for the thirty-second check-in.
         </h2>
         <p className="mb-10 max-w-lg text-[15px] leading-relaxed text-ink-soft">
           One dashboard for subscriptions, bills, renewals, warranties, and deadlines,
@@ -223,7 +338,7 @@ export function Home() {
           <div className="grid gap-12 lg:grid-cols-12">
             <div className="lg:col-span-5">
               <h2 className="font-display text-3xl font-medium tracking-tight text-paper sm:text-4xl">
-                Built like it holds your keys.
+                Privacy and security, built in.
               </h2>
               <p className="mt-4 max-w-sm leading-relaxed text-pine-200">
                 Because it does. Life admin is sensitive by definition,
@@ -254,17 +369,56 @@ export function Home() {
         </div>
       </section>
 
-      {/* Quote */}
-      <section className="mx-auto w-full max-w-[1200px] px-5 py-20 sm:px-8 lg:py-28">
-        <figure className="mx-auto max-w-2xl text-center">
-          <blockquote className="font-display text-[26px] font-medium italic leading-[1.35] text-ink sm:text-3xl">
-            “I found four subscriptions I had been quietly paying since 2023.
-            Wirby paid for itself in the first ten minutes.”
-          </blockquote>
-          <figcaption className="mt-6 text-sm text-ink-faint">
-            Maren Kowalczyk, freelance photographer
-          </figcaption>
-        </figure>
+      {/* FAQ: natural search-style questions, answers mirror the FAQPage JSON-LD above */}
+      <section id="faq" className="border-t border-line">
+        <div className="mx-auto w-full max-w-[1200px] px-5 py-20 sm:px-8 lg:py-28">
+          <div className="max-w-2xl lg:ml-[16%]">
+            <h2 className="font-display text-2xl font-medium tracking-tight text-ink sm:text-3xl">
+              Frequently asked questions
+            </h2>
+            <div className="mt-6 divide-y divide-line border-t border-line">
+              {[
+                {
+                  q: "What is Wirby?",
+                  a: "Wirby is a subscription tracker and bill reminder app. It brings your bills, subscriptions, renewals, warranties, and deadlines into one dashboard, ranked by how soon they're due, so nothing lapses without you knowing.",
+                },
+                {
+                  q: "Is Wirby a bill reminder app?",
+                  a: "Yes. Wirby reminds you before bills, subscriptions, and renewals are due. Add an item by upload, paste, or manual entry, and Wirby tracks the due date and alerts you ahead of time.",
+                },
+                {
+                  q: "Can Wirby track recurring subscriptions and renewals?",
+                  a: "Yes. Subscriptions and renewals are core to Wirby. It reads the cadence (weekly, monthly, quarterly, yearly) and rolls recurring items forward automatically after you handle them, and totals your recurring spend into one monthly number.",
+                },
+                {
+                  q: "Do I need to connect my bank account?",
+                  a: "No. Wirby works from what you give it directly: a document upload, pasted text, or a manual entry. There is no bank connection required to get value.",
+                },
+                {
+                  q: "Is my data private and secure?",
+                  a: "Document extraction runs in your browser, not on a server, and only the fields you confirm are saved. Every sign-in, edit, export, and deletion is recorded in an audit trail you can read, and you can export or delete your data at any time.",
+                },
+                {
+                  q: "How much does Wirby cost?",
+                  a: (
+                    <>
+                      Wirby is free for up to 25 tracked items. Wirby Plus removes that limit for $6 per month. See{" "}
+                      <Link to="/pricing" className="text-pine-700 underline hover:no-underline">pricing</Link> for full details.
+                    </>
+                  ),
+                },
+              ].map((f) => (
+                <details key={f.q} className="group py-5">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-medium text-ink transition-colors hover:text-pine-700 [&::-webkit-details-marker]:hidden">
+                    {f.q}
+                    <span className="text-ink-faint transition-transform group-open:rotate-45" aria-hidden>+</span>
+                  </summary>
+                  <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-soft">{f.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Final CTA */}
@@ -281,7 +435,7 @@ export function Home() {
             </p>
           </div>
           <Button to="/signup" size="lg" className="shrink-0">
-            Start free
+            Start tracking free
             <ArrowRight size={18} aria-hidden />
           </Button>
         </div>

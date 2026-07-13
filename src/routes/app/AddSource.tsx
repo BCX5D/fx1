@@ -12,7 +12,7 @@ import { extractFromText } from "../../lib/extract";
 import type { ConfidenceField, Item, SourceType } from "../../lib/types";
 import { useDB, useData } from "../../state/DataContext";
 import { useToast } from "../../state/ToastContext";
-import { FREE_ITEM_LIMIT, FREE_PDF_PAGE_LIMIT, PLUS_PDF_PAGE_LIMIT, isPlus } from "../../lib/billing";
+import { FREE_ITEM_LIMIT, FREE_PDF_PAGE_LIMIT, PLUS_PDF_PAGE_LIMIT, isPlus, wouldExceedFreeLimit } from "../../lib/billing";
 
 type Tab = "upload" | "paste" | "manual";
 type Phase = "input" | "reading" | "review";
@@ -148,7 +148,7 @@ export function AddSource() {
       updatedAt: now,
     }));
     // Client-side guard for good UX; the database trigger is the real backstop.
-    if (!plus && activeCount + items.length > FREE_ITEM_LIMIT) {
+    if (wouldExceedFreeLimit(activeCount, items.length, plus ? "plus" : "free")) {
       toast(`Free accounts hold ${FREE_ITEM_LIMIT} items. Upgrade to Plus for unlimited.`, "error");
       navigate("/app/settings");
       return;

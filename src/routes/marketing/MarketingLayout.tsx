@@ -43,13 +43,15 @@ export function MarketingLayout() {
               <span className="font-semibold tracking-tight text-ink">Wirby</span>
             </div>
             <p className="text-sm leading-relaxed text-ink-faint">
-              One calm place for bills, subscriptions, renewals, and the deadlines that matter.
+              A subscription tracker, bill reminder, and renewal tracker in one calm dashboard.
             </p>
           </div>
           <div className="flex flex-wrap gap-12 sm:gap-16">
             <nav aria-label="Product" className="flex flex-col gap-2.5 text-sm">
               <span className="font-medium text-ink">Product</span>
+              <Link to="/#what-is-wirby" className="text-ink-faint hover:text-pine-700">What is Wirby</Link>
               <Link to="/pricing" className="text-ink-faint hover:text-pine-700">Pricing</Link>
+              <Link to="/#faq" className="text-ink-faint hover:text-pine-700">FAQ</Link>
               <Link to="/signup" className="text-ink-faint hover:text-pine-700">Start free</Link>
               <Link to="/signin" className="text-ink-faint hover:text-pine-700">Sign in</Link>
             </nav>

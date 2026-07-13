@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowSquareOut, DownloadSimple, Flask, Sparkle, Trash, WarningCircle } from "@phosphor-icons/react";
 import { PageHeader } from "../../components/app/PageHeader";
 import { Button } from "../../components/ui/Button";
@@ -11,7 +11,7 @@ import { useDB, useData } from "../../state/DataContext";
 import { useToast } from "../../state/ToastContext";
 import { exportCSV, exportJSON } from "../../lib/export";
 import { sampleItems } from "../../lib/seed";
-import { FREE_ITEM_LIMIT, isPlus, openBillingPortal, openPlusCheckout } from "../../lib/billing";
+import { FREE_ITEM_LIMIT, isPlus, openBillingPortal, startPlusCheckout } from "../../lib/billing";
 import { fmtDate } from "../../lib/dates";
 
 export function Settings() {
@@ -20,6 +20,7 @@ export function Settings() {
   const db = useDB();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [prefs, setPrefs] = useState(db.prefs);
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
@@ -33,24 +34,37 @@ export function Settings() {
   const goToCheckout = async () => {
     setBillingBusy(true);
     try {
-      const outcome = await openPlusCheckout();
-      if (outcome === "completed") {
-        toast("Payment received. Finishing setup…");
-        // The overlay checkout never redirects us here -- Paddle creates the
-        // subscription asynchronously and reports it via webhook, which
-        // then updates lp_subscriptions. Poll briefly for that write to land
-        // rather than assuming it's instant or making the user refresh.
-        for (let attempt = 0; attempt < 6; attempt++) {
-          await new Promise((r) => setTimeout(r, 1500));
-          refreshSubscription();
-        }
-      }
+      // Stripe redirect flow: the Edge Function builds a Checkout Session and
+      // we send the browser to Stripe's hosted page. We come back to
+      // /app/settings?checkout=success, where the effect below polls for the
+      // webhook to flip the plan.
+      window.location.href = await startPlusCheckout();
     } catch (err) {
       toast(err instanceof Error ? err.message : "Could not start checkout.", "error");
-    } finally {
       setBillingBusy(false);
     }
   };
+
+  // Handle the return from Stripe Checkout. The subscription is created
+  // asynchronously and reported by the webhook, so poll briefly rather than
+  // assuming lp_subscriptions is already updated the instant we land back.
+  useEffect(() => {
+    const status = searchParams.get("checkout");
+    if (!status) return;
+    if (status === "success") {
+      toast("Payment received. Finishing setup…");
+      let attempt = 0;
+      const timer = setInterval(() => {
+        refreshSubscription();
+        if (++attempt >= 6) clearInterval(timer);
+      }, 1500);
+      setSearchParams({}, { replace: true });
+      return () => clearInterval(timer);
+    }
+    if (status === "cancelled") {
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, refreshSubscription, setSearchParams, toast]);
 
   const goToPortal = async () => {
     setBillingBusy(true);
@@ -167,8 +181,9 @@ export function Settings() {
           </div>
         </div>
         <p className="mt-2 text-[13px] leading-relaxed text-ink-faint">
-          This preview stores preferences and surfaces reminders in-app.
-          Email delivery activates when a mail provider is connected in deployment.
+          Reminders surface in-app and, when you add a notification email above,
+          by email: a due-soon alert on the days something needs attention, and
+          a weekly digest each Monday.
         </p>
         <Button className="mt-4" onClick={savePrefs} disabled={!dirty}>Save preferences</Button>
       </section>

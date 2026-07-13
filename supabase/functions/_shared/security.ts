@@ -93,7 +93,7 @@ export interface RateLimitResult {
  * turns into an open door for the operation being limited.
  *
  * @param admin service-role Supabase client (bypasses RLS; this table has no client policies at all)
- * @param key   unique bucket, e.g. `delete-account:user:<uuid>` or `paddle-customer:ip:<ip>`
+ * @param key   unique bucket, e.g. `delete-account:user:<uuid>` or `create-checkout:user:<uuid>`
  * @param max   max requests allowed inside the window
  * @param windowSeconds window length in seconds
  */

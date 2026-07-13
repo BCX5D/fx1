@@ -1,9 +1,6 @@
 -- Wirby billing state + server-side free-tier enforcement.
 -- lp_subscriptions mirrors the payment provider (provider stays source of truth).
 -- Only the service-role webhook writes it; users may read their own row.
--- Column names are provider-agnostic (provider_customer_id / provider_subscription_id)
--- since the payment provider is Stripe today and may move to a merchant-of-record
--- (e.g. Paddle) before launch — see README "Payments" section.
 
 create table if not exists public.lp_subscriptions (
   user_id             uuid primary key references auth.users(id) on delete cascade,

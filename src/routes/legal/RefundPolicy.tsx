@@ -26,7 +26,7 @@ export function RefundPolicy() {
 
       <LSection id="cancelling" title="2. Cancelling Wirby Plus">
         <LUl>
-          <li>Cancel anytime from Settings → Manage subscription (Paddle's customer portal). Cancellation is immediate to action, but access continues until the end of your current paid billing period.</li>
+          <li>Cancel anytime from Settings → Manage subscription (Stripe's customer portal). Cancellation is immediate to action, but access continues until the end of your current paid billing period.</li>
           <li>We do not charge cancellation fees.</li>
           <li>After cancellation, your account reverts to the Free plan; your existing items stay intact, but the 25-item limit applies to new items going forward.</li>
         </LUl>
@@ -85,12 +85,11 @@ export function RefundPolicy() {
 
       <LSection id="how-refunds-are-issued" title="6. How refunds are issued">
         <LP>
-          Wirby Plus is billed through Paddle.com Market Ltd (“Paddle”), our
-          reseller, who acts as the merchant of record for your purchase.
-          Approved refunds are issued by Paddle to your original payment method
-          and typically appear within 5–10 business days, depending on your bank.
-          We do not issue refunds as account credit unless you request that
-          instead.
+          Wirby Plus payments are processed by Stripe, with Wirby as the seller
+          of record. Approved refunds are issued to your original payment method
+          via Stripe and typically appear within 5–10 business days, depending on
+          your bank. We do not issue refunds as account credit unless you request
+          that instead.
         </LP>
       </LSection>
 
