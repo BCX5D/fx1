@@ -34,8 +34,8 @@ export function Settings() {
   const goToCheckout = async () => {
     setBillingBusy(true);
     try {
-      // Stripe redirect flow: the Edge Function builds a Checkout Session and
-      // we send the browser to Stripe's hosted page. We come back to
+      // Lemon Squeezy redirect flow: the Edge Function builds a hosted checkout
+      // and we send the browser to it. We come back to
       // /app/settings?checkout=success, where the effect below polls for the
       // webhook to flip the plan.
       window.location.href = await startPlusCheckout();
@@ -45,7 +45,7 @@ export function Settings() {
     }
   };
 
-  // Handle the return from Stripe Checkout. The subscription is created
+  // Handle the return from Lemon Squeezy checkout. The subscription is created
   // asynchronously and reported by the webhook, so poll briefly rather than
   // assuming lp_subscriptions is already updated the instant we land back.
   useEffect(() => {

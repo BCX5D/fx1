@@ -9,7 +9,7 @@ export function Privacy() {
       title="Privacy Policy"
       updated={UPDATED}
       path="/privacy"
-      seoDescription="How Wirby collects, stores, and protects your data: what we track, who we share it with (Supabase, Stripe, Resend, Plausible), and how to export or delete everything."
+      seoDescription="How Wirby collects, stores, and protects your data: what we track, who we share it with (Supabase, Lemon Squeezy, Resend, Plausible), and how to export or delete everything."
     >
       <LP>
         This policy explains what Wirby ("Wirby", "we", "us") collects when you use
@@ -33,7 +33,7 @@ export function Privacy() {
           <li><strong>Item data:</strong> whatever you add — titles, vendors, amounts, currencies, due dates, cadence, and notes for bills, subscriptions, renewals, warranties, deadlines, and documents you track.</li>
           <li><strong>Source snippets:</strong> when an item is created from an upload or pasted text, we keep a short excerpt (not the full file) so you can see where the data came from. Uploaded files themselves are parsed in your browser and are not stored on our servers.</li>
           <li><strong>Audit events:</strong> a record of actions on your account (sign-ins, edits, exports, deletions) so you have a readable history of your own account.</li>
-          <li><strong>Billing data:</strong> if you upgrade to Wirby Plus, our payment processor Stripe handles your card details directly. We store your subscription status and Stripe customer/subscription identifiers, never your full card number.</li>
+          <li><strong>Billing data:</strong> if you upgrade to Wirby Plus, our merchant of record Lemon Squeezy handles your payment and card details directly. We store your subscription status and Lemon Squeezy customer/subscription identifiers, never your full card number.</li>
           <li><strong>Basic usage analytics:</strong> aggregate, cookieless page-view analytics (see Section 6). We do not use tracking cookies or cross-site advertising identifiers.</li>
         </LUl>
         <LP>
@@ -46,7 +46,7 @@ export function Privacy() {
         <LUl>
           <li>To operate the dashboard: show your items, calculate urgency, and send reminders you've opted into.</li>
           <li>To authenticate you and keep your account secure.</li>
-          <li>To process payments and manage your subscription, via Stripe.</li>
+          <li>To process payments and manage your subscription, via Lemon Squeezy.</li>
           <li>To provide customer support when you contact us.</li>
           <li>To understand aggregate product usage (e.g. which pages are visited) so we can improve the Service — never to build an individual profile of you for advertising.</li>
         </LUl>
@@ -79,7 +79,7 @@ export function Privacy() {
         </LP>
         <LUl>
           <li><strong>Supabase</strong> (database, authentication) — hosted in the EU (Ireland). Supabase's own privacy and security terms apply to data at rest.</li>
-          <li><strong>Stripe</strong> (payment processing for Wirby Plus) — handles your card details and billing directly; Wirby never sees or stores full card numbers.</li>
+          <li><strong>Lemon Squeezy</strong> (merchant of record for Wirby Plus) — handles payment, card details, and sales tax/VAT directly; Wirby never sees or stores full card numbers.</li>
           <li><strong>Resend</strong> (transactional email) — delivers account emails (sign-up confirmation, password reset) and, if you opt in, reminder and weekly-digest emails. Only your email address and the message content are shared.</li>
           <li><strong>Plausible Analytics</strong> (usage analytics) — cookieless, does not track individuals across sites, does not collect IP addresses in a personally identifiable way.</li>
         </LUl>
@@ -155,7 +155,7 @@ export function Privacy() {
           Our primary infrastructure (Supabase) is hosted in the EU (Ireland).
           If you access Wirby from outside the EEA, your data will be transferred
           to and processed in the EEA. Where sub-processors are located outside the
-          EEA (for example, Stripe's and Resend's global infrastructure), transfers are governed
+          EEA (for example, Lemon Squeezy's and Resend's global infrastructure), transfers are governed
           by that provider's own compliance mechanisms (such as Standard
           Contractual Clauses).
         </LP>

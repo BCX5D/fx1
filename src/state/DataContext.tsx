@@ -11,7 +11,7 @@ interface DataValue {
   store: Store;
   ready: boolean;
   subscription: Subscription;
-  /** Re-read subscription from the backend (e.g. after a Stripe checkout completes). */
+  /** Re-read subscription from the backend (e.g. after a Lemon Squeezy checkout completes). */
   refreshSubscription: () => void;
 }
 

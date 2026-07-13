@@ -1,19 +1,23 @@
 import { supabase } from "./supabase";
 
 /**
- * Billing client, backed by Stripe. Reads the user's plan from
- * lp_subscriptions (written only by the stripe-webhook Edge Function -- see
- * that function for why client-reported plan state is never trusted). The
- * Stripe secret key and webhook secret live only in Edge Function secrets,
- * never here.
+ * Billing client, backed by Lemon Squeezy (a Merchant of Record). Reads the
+ * user's plan from lp_subscriptions (written only by the lemonsqueezy-webhook
+ * Edge Function -- see that function for why client-reported plan state is
+ * never trusted). The Lemon Squeezy API key and webhook secret live only in
+ * Edge Function secrets, never here.
  *
- * Checkout is the standard Stripe redirect flow: the client asks the
- * create-checkout Edge Function (JWT-verified) to build a Checkout Session
- * server-side, then redirects the browser to the returned hosted URL. On
- * completion Stripe redirects back to /app/settings?checkout=success and the
+ * Merchant of Record means Lemon Squeezy is the legal seller: it collects and
+ * remits sales tax / VAT worldwide, and Wirby receives payouts. That's why the
+ * legal pages name Lemon Squeezy as the merchant of record.
+ *
+ * Checkout is a hosted redirect flow: the client asks the create-checkout Edge
+ * Function (JWT-verified) to build a Lemon Squeezy checkout server-side, then
+ * redirects the browser to the returned hosted URL. On completion Lemon
+ * Squeezy redirects back to /app/settings?checkout=success and the
  * subscription is reported asynchronously through the webhook, which is the
- * only thing that ever flips lp_subscriptions to "plus". No Stripe.js runs in
- * the browser, so there is no client-side Stripe key to ship.
+ * only thing that ever flips lp_subscriptions to "plus". No billing SDK runs
+ * in the browser, so there is no client-side billing key.
  */
 
 export const FREE_ITEM_LIMIT = 25;
@@ -68,10 +72,10 @@ export async function fetchSubscription(userId: string): Promise<Subscription> {
 
 /**
  * Asks the create-checkout Edge Function (server-side, JWT-verified) to build
- * a Stripe Checkout Session for Wirby Plus and returns its hosted URL. The
- * caller redirects the browser there (`window.location.href = url`). Stripe
- * sends the user back to /app/settings?checkout=success on completion; the
- * plan flip itself lands moments later via the webhook, so the return handler
+ * a Lemon Squeezy checkout for Wirby Plus and returns its hosted URL. The
+ * caller redirects the browser there (`window.location.href = url`). Lemon
+ * Squeezy sends the user back to /app/settings?checkout=success on completion;
+ * the plan flip lands moments later via the webhook, so the return handler
  * should refetch subscription state with a short retry rather than assuming
  * it's immediate.
  */
@@ -83,8 +87,9 @@ export async function startPlusCheckout(): Promise<string> {
 }
 
 /**
- * Creates a Stripe Billing Portal session and returns the "manage
- * subscription" URL. Navigate to it immediately; these links are short-lived.
+ * Returns the Lemon Squeezy customer portal URL for the caller's own
+ * subscription (manage / cancel / update payment method). Navigate to it
+ * immediately; these signed links are short-lived.
  */
 export async function openBillingPortal(): Promise<string> {
   if (!supabase) throw new Error("Billing is not configured.");

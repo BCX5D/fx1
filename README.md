@@ -27,10 +27,10 @@ Everything the code needs is built and deployed. These are the steps only you ca
    - `VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`
    - `VITE_PLAUSIBLE_DOMAIN=wirby.app` (optional analytics)
 
-   There is intentionally **no client-side Stripe variable** — checkout uses the
-   server-generated Stripe Checkout redirect flow, so no Stripe key ships in the
-   browser bundle. All Stripe secrets live in Supabase Edge Function secrets
-   (see "Payments" below).
+   There is intentionally **no client-side billing variable** — checkout uses the
+   server-generated Lemon Squeezy hosted-checkout redirect, so no billing key
+   ships in the browser bundle. All Lemon Squeezy secrets live in Supabase Edge
+   Function secrets (see "Payments" below).
 4. Point `wirby.app` at the host (bought on Porkbun/Cloudflare).
 
 ### 2. Supabase auth settings (dashboard)
@@ -49,65 +49,63 @@ Everything the code needs is built and deployed. These are the steps only you ca
   and leaked-password protection are actually toggled on in the dashboard today.
   Confirm both manually before launch.
 
-### 3. Payments (Stripe)
+### 3. Payments (Lemon Squeezy)
 
-Wirby bills through **Stripe**. Stripe is the **payment processor**, not a
-merchant of record — **Wirby is the seller of record** and is responsible for
-registering, collecting, and remitting any applicable sales tax/VAT (Stripe Tax
-can automate the calculation, but the obligation is Wirby's). The legal pages
-(`Terms.tsx`, `Privacy.tsx`, `RefundPolicy.tsx`) reflect this: they name Stripe
-as the payment processor and Wirby as the seller.
+Wirby bills through **Lemon Squeezy**, a **Merchant of Record**. Lemon Squeezy is
+the **seller of record**: it collects and remits sales tax / VAT worldwide, and
+Wirby receives payouts. This is deliberately chosen so Wirby does not have to
+register for VAT/OSS or act as the tax-collecting seller itself. (You still must
+declare payout income to your own tax authority — an MoR handles tax toward the
+*buyer*, not your personal/business income tax.) The legal pages (`Terms.tsx`,
+`Privacy.tsx`, `RefundPolicy.tsx`) name Lemon Squeezy as merchant of record.
 
 The code is deployed: three billing Edge Functions (`create-checkout`,
-`customer-portal`, `stripe-webhook`), the `lp_subscriptions` table, a server-side
-free-item-limit trigger, and the Settings UI (upgrade / manage subscription). A
-fourth Edge Function, `delete-account`, handles self-serve account deletion and is
-unrelated to billing activation.
+`customer-portal`, `lemonsqueezy-webhook`), the `lp_subscriptions` table, a
+server-side free-item-limit trigger, and the Settings UI (upgrade / manage
+subscription). A fourth Edge Function, `delete-account`, handles self-serve
+account deletion and is unrelated to billing activation.
 
-**Checkout shape**: standard Stripe redirect flow. `create-checkout`
-(JWT-verified) creates-or-fetches a Stripe customer for the signed-in user, stores
-the link in `lp_subscriptions.provider_customer_id`, builds a Checkout Session, and
-returns its hosted URL; the client redirects the browser there. Stripe returns the
-user to `/app/settings?checkout=success`. The subscription is created
-asynchronously and reported through `stripe-webhook`, which is the only thing that
-ever flips `lp_subscriptions.plan` to `plus`. No Stripe.js runs in the browser, so
-there is no client-side Stripe key.
+**Checkout shape**: hosted redirect flow. `create-checkout` (JWT-verified) builds a
+Lemon Squeezy checkout server-side, stamping the verified Supabase user id into the
+checkout's `custom` data, and returns the hosted URL; the client redirects the
+browser there. Lemon Squeezy returns the user to `/app/settings?checkout=success`.
+The subscription is created asynchronously and reported through
+`lemonsqueezy-webhook`, which reads `meta.custom_data.supabase_user_id` and is the
+only thing that ever flips `lp_subscriptions.plan` to `plus`. No billing SDK runs in
+the browser, so there is no client-side billing key.
 
 To activate billing:
 
-1. Create a **Stripe account** (use test mode to start; live mode needs business
-   details + bank account).
-2. Create a Product "Wirby Plus" with a **$6/mo recurring price** → copy its price
-   ID (`price_...`).
-3. Create a **secret API key** (Developers → API keys, `sk_test_...` / `sk_live_...`).
-4. Add a **webhook endpoint** (Developers → Webhooks) pointing at:
-   `https://kfhbmfaikejsfoxngmue.supabase.co/functions/v1/stripe-webhook`
-   Subscribe to: `checkout.session.completed`, `customer.subscription.created`,
-   `customer.subscription.updated`, `customer.subscription.deleted`. Copy the
-   endpoint's **signing secret** (`whsec_...`).
-5. In the **Customer Portal** settings (Billing → Customer portal), enable cancel /
-   update-payment-method and save — required for the "Manage subscription" button.
-6. Set the Edge Function **secrets** (Supabase dashboard → Edge Functions → Secrets,
+1. Create a **Lemon Squeezy account** and a **Store** (test mode is on by default
+   until you activate the store for live payments).
+2. Create a Product "Wirby Plus" with a **$6/mo subscription variant** → note the
+   numeric **variant id** and your **store id**.
+3. Create an **API key** (Settings → API).
+4. Add a **webhook** (Settings → Webhooks) pointing at:
+   `https://kfhbmfaikejsfoxngmue.supabase.co/functions/v1/lemonsqueezy-webhook`
+   Subscribe to the `subscription_*` events (created/updated/cancelled/resumed/
+   expired/paused). Set a **signing secret** on the webhook and copy it.
+5. Set the Edge Function **secrets** (Supabase dashboard → Edge Functions → Secrets,
    or `supabase secrets set`):
-   - `STRIPE_SECRET_KEY=sk_...` (from step 3)
-   - `STRIPE_PLUS_PRICE_ID=price_...` (from step 2)
-   - `STRIPE_WEBHOOK_SECRET=whsec_...` (from step 4)
-   - `APP_URL=https://www.wirby.app` (used for checkout success/cancel/return URLs)
+   - `LEMONSQUEEZY_API_KEY=...` (from step 3)
+   - `LEMONSQUEEZY_STORE_ID=...` (from step 2)
+   - `LEMONSQUEEZY_VARIANT_ID=...` (the Wirby Plus variant, from step 2)
+   - `LEMONSQUEEZY_WEBHOOK_SECRET=...` (from step 4)
+   - `APP_URL=https://www.wirby.app` (used for the checkout redirect)
    (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` are injected
    automatically.)
-7. Test with [Stripe's test card](https://docs.stripe.com/testing) (`4242 4242 4242
-   4242`, any future expiry, any CVC). On success the webhook flips
+6. Test in test mode with Lemon Squeezy's [test card](https://docs.lemonsqueezy.com/help/getting-started/test-mode)
+   (`4242 4242 4242 4242`, any future expiry, any CVC). On success the webhook flips
    `lp_subscriptions.plan` to `plus` and the app unlocks unlimited items.
-8. Before going live: swap the test key/price/webhook for their **live-mode**
-   equivalents (test and live are entirely separate in Stripe, with separate IDs
-   and keys) and confirm the live webhook endpoint + signing secret.
+7. Before going live: activate the store for live payments and confirm the live
+   webhook + signing secret.
 
-**Security**: no Stripe key ever touches the frontend. The secret key and webhook
+**Security**: no billing key ever touches the frontend. The API key and webhook
 signing secret live only in Edge Function secrets. The webhook is
-signature-verified (manual HMAC-SHA256 over `Stripe-Signature`, 300-second
-tolerance, per Stripe's documented algorithm — see
-`supabase/functions/_shared/stripeSignature.ts`, unit-tested in
-`tests/stripeSignature.test.ts`) and writes via service role.
+signature-verified (HMAC-SHA256 hex over the raw body via the `X-Signature`
+header, per Lemon Squeezy's documented algorithm — see
+`supabase/functions/_shared/lemonSignature.ts`, unit-tested in
+`tests/lemonSignature.test.ts`) and writes via service role.
 
 ### 4. Legal pages (required before accepting real payments)
 
@@ -132,16 +130,17 @@ promise something real: account deletion in Settings is fully implemented
 2. Have a lawyer, or a service like [iubenda](https://www.iubenda.com), review
    the final text — especially liability limits and governing law, which are
    jurisdiction-specific.
-3. With Stripe as processor (not merchant of record), **Wirby is the seller of
-   record** and owns sales-tax/VAT registration and remittance. The Terms/Privacy/
-   Refund pages now say exactly that — keep them accurate if the copy is edited
-   later, and consider enabling Stripe Tax to automate calculation.
+3. With Lemon Squeezy as **merchant of record**, Lemon Squeezy is the seller of
+   record and handles sales tax/VAT toward buyers — so Wirby does not register for
+   VAT itself. The Terms/Privacy/Refund pages say exactly that; keep them accurate
+   if the copy is edited later. You still declare payout income to your own tax
+   authority.
 4. Keep the pages in sync with the product: if pricing, data retention, or
    sub-processors change, update the matching section the same day.
 
 The Privacy Policy already documents the real sub-processors in use (Supabase,
-Stripe, Resend, Plausible) and is honest that extraction is deterministic pattern
-matching, not AI — don't let future copy drift from that.
+Lemon Squeezy, Resend, Plausible) and is honest that extraction is deterministic
+pattern matching, not AI — don't let future copy drift from that.
 
 ### 5. Account deletion (implemented)
 
@@ -149,8 +148,8 @@ Settings → Danger zone → "Delete my account" calls a fourth Edge Function,
 `delete-account`, which:
 - Verifies the caller's own Supabase JWT (never trusts a user id from the request body).
 - Refuses to proceed if the user has an active/trialing Wirby Plus subscription,
-  so Stripe stays in a clean state — they're asked to cancel via the customer
-  portal first.
+  so billing stays in a clean state — they're asked to cancel via the Lemon
+  Squeezy customer portal first.
 - Deletes the `auth.users` row via the service-role admin API, which cascades
   (`on delete cascade`) through `lp_items`, `lp_audit`, `lp_prefs`, and
   `lp_subscriptions`.
@@ -209,7 +208,7 @@ To activate:
 | Ingestion | `/app/add` | Upload (PDF/TXT/EML/MD/CSV), paste, or manual. Extraction with per-field confidence; nothing saves without review. PDF page limit is plan-aware (20 pages Free, 75 Plus) |
 | Item detail | `/app/items/:id` | Edit, complete, snooze, archive, delete; source snippet; per-item history |
 | Search & archive | `/app/search` | Text search, status tabs, type and urgency filters, undated filter |
-| Settings | `/app/settings` | Plan/billing (upgrade via Stripe Checkout redirect, manage via Stripe customer portal), reminder prefs, CSV/JSON export, sample data, delete-all-items, and real account deletion (type-to-confirm, calls a service-role Edge Function) |
+| Settings | `/app/settings` | Plan/billing (upgrade via Lemon Squeezy checkout redirect, manage via Lemon Squeezy customer portal), reminder prefs, CSV/JSON export, sample data, delete-all-items, and real account deletion (type-to-confirm, calls a service-role Edge Function) |
 | Audit log | `/app/audit` | Last 500 events: item changes, sign-ins, data events |
 
 ### Core behaviors worth knowing
@@ -328,8 +327,8 @@ below the store interface.
   provider triggered by a scheduled job reading the urgency math (`src/lib/urgency.ts`).
   Not sold on the pricing page — Plus currently only promises unlimited items and
   priority PDF extraction, both of which are actually implemented.
-- **Billing**: pricing page ships; Stripe Checkout attaches to the Plus plan and is
-  fully wired end-to-end (see "Payments" above for the manual dashboard setup
+- **Billing**: pricing page ships; Lemon Squeezy checkout attaches to the Plus plan
+  and is fully wired end-to-end (see "Payments" above for the manual dashboard setup
   still required). No billing code was faked.
 - **Extraction** (`src/lib/extract.ts`): deterministic, in-browser, no model — by design.
 - **Password reset email delivery** in `supabase` mode depends on Supabase's built-in
@@ -346,7 +345,7 @@ step.
   only, zero client policies) + `lp_check_rate_limit()` RPC implement a
   fixed-window counter. Limits: `delete-account` 5/hour/user,
   `create-checkout` 10/hour/user, `customer-portal` 20/hour/user,
-  `stripe-webhook` 120/hour/Stripe-customer-id. All fail CLOSED (a DB error
+  `lemonsqueezy-webhook` 120/hour/customer-id. All fail CLOSED (a DB error
   counts as "not allowed", never "allowed"). Auth endpoints themselves
   (`signin`/`signup`/`recover`) are rate-limited by Supabase Auth directly —
   see "Manual setup" below to confirm the dashboard limits fit your launch.
@@ -360,12 +359,12 @@ step.
   work; the webhook additionally caps payload size before touching the
   signature check.
 - **Fail-closed env var checks.** Every Edge Function throws at startup
-  (refuses to boot) if a required secret (`STRIPE_SECRET_KEY`,
-  `STRIPE_WEBHOOK_SECRET`, `CRON_SECRET`, `RESEND_API_KEY`, Supabase URL/keys)
-  is missing, instead of running half-configured and failing confusingly on the
-  first real request.
+  (refuses to boot) if a required secret (`LEMONSQUEEZY_API_KEY`,
+  `LEMONSQUEEZY_WEBHOOK_SECRET`, `CRON_SECRET`, `RESEND_API_KEY`, Supabase
+  URL/keys) is missing, instead of running half-configured and failing
+  confusingly on the first real request.
 - **Reduced PII in Edge Function logs.** `create-checkout` and
-  `customer-portal` never log full Stripe API response bodies (which can
+  `customer-portal` never log full Lemon Squeezy API response bodies (which can
   carry customer email/billing data) on error — only status codes.
 - **Bounded database text/JSON fields.** `lp_items`, `lp_audit`, `lp_prefs`
   had no length caps on `title`/`vendor`/`notes`/`detail`/`email`/etc. A
@@ -432,14 +431,15 @@ launch:
    linked** before running any `supabase db push` — see the existing note in
    this README's "Backend setup" section. All migration files in
    `supabase/migrations/` now match what's applied to the live database
-   (including the Stripe billing swap `20260713120000_stripe_billing_and_reminders.sql`
-   and the reminder cron `20260713123000_schedule_send_reminders.sql`).
+   (including the reminder cron `20260713123000_schedule_send_reminders.sql` and
+   the Lemon Squeezy provider swap `20260713140000_lemonsqueezy_billing_provider.sql`).
 
 ### Known residual risks (not fixed in this pass, by design or scope)
 
-- **Stripe checkout / customer-portal open Stripe-hosted pages** via full
-  browser navigation (not an embedded iframe), so no Stripe origin is needed in
-  the CSP `frame-src` at all — this is expected, documented behavior.
+- **Lemon Squeezy checkout / customer-portal open Lemon-Squeezy-hosted pages**
+  via full browser navigation (not an embedded iframe), so no Lemon Squeezy
+  origin is needed in the CSP `frame-src` at all — this is expected, documented
+  behavior.
 - **No CSRF token on Edge Functions**: not needed. Every sensitive Edge
   Function requires a Supabase JWT sent as `Authorization: Bearer`, never a
   cookie, so there is no ambient credential for a cross-site request to ride

@@ -6,49 +6,35 @@ import {
 } from "../_shared/security.ts";
 
 /**
- * Creates a Stripe Checkout Session for Wirby Plus and returns its hosted
- * URL, which the client redirects to. This is the Stripe model (a
- * server-generated Checkout Session URL you redirect to), replacing the old
- * Paddle client-side overlay: the frontend never touches the Stripe SDK and
- * never invents a customer id.
+ * Creates a Lemon Squeezy hosted checkout for Wirby Plus and returns its URL,
+ * which the client redirects to. Lemon Squeezy is a Merchant of Record: it is
+ * the legal seller and handles sales tax / VAT worldwide.
  *
  * Trust model: the caller is identified only by their own Supabase JWT
- * (verify_jwt stays ON). We create-or-fetch a Stripe customer server-side,
- * keyed off that verified identity, store the link in lp_subscriptions, and
- * stamp the Supabase user id into the session's client_reference_id and the
- * subscription metadata. The webhook later resolves which user a subscription
- * belongs to via the stored provider_customer_id, never by trusting anything
- * the browser sent.
+ * (verify_jwt stays ON). We build the checkout server-side and stamp the
+ * verified Supabase user id into the checkout's `custom` data. The webhook
+ * later reads that same server-set value from `meta.custom_data` to know which
+ * user a subscription belongs to -- the browser never sets or supplies it.
+ *
+ * Unlike Stripe, there is no pre-created customer step: Lemon Squeezy creates
+ * the customer at checkout time and reports the customer id in the webhook,
+ * which is when lp_subscriptions.provider_customer_id gets written.
  */
 
-const STRIPE_API_BASE = "https://api.stripe.com/v1";
-const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
-const STRIPE_PLUS_PRICE_ID = Deno.env.get("STRIPE_PLUS_PRICE_ID");
+const LS_API_BASE = "https://api.lemonsqueezy.com/v1";
+const LS_API_KEY = Deno.env.get("LEMONSQUEEZY_API_KEY");
+const LS_STORE_ID = Deno.env.get("LEMONSQUEEZY_STORE_ID");
+const LS_VARIANT_ID = Deno.env.get("LEMONSQUEEZY_VARIANT_ID");
 const APP_URL = Deno.env.get("APP_URL") ?? "https://www.wirby.app";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 // Fail closed: refuse to boot rather than run half-configured.
-if (!STRIPE_SECRET_KEY || !STRIPE_PLUS_PRICE_ID || !SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
+if (!LS_API_KEY || !LS_STORE_ID || !LS_VARIANT_ID || !SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error(
-    "create-checkout: missing required env vars (STRIPE_SECRET_KEY / STRIPE_PLUS_PRICE_ID / Supabase secrets).",
+    "create-checkout: missing required env vars (LEMONSQUEEZY_API_KEY / LEMONSQUEEZY_STORE_ID / LEMONSQUEEZY_VARIANT_ID / Supabase secrets).",
   );
-}
-
-/** Stripe's API is form-encoded; this posts application/x-www-form-urlencoded and parses the JSON reply. */
-async function stripeFetch(path: string, params: Record<string, string>, method = "POST") {
-  const body = new URLSearchParams(params).toString();
-  const res = await fetch(`${STRIPE_API_BASE}${path}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: method === "GET" ? undefined : body,
-  });
-  const json = await res.json().catch(() => ({}));
-  return { ok: res.ok, status: res.status, body: json };
 }
 
 Deno.serve(async (req) => {
@@ -75,58 +61,47 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
 
-    // Creating a Stripe customer + session is a real third-party API call.
-    // Cap well above normal use but low enough to blunt scripted abuse.
     const rl = await checkRateLimit(admin, `create-checkout:user:${user.id}`, 10, 3600, cors);
     if (!rl.allowed) return rl.response!;
 
-    // Reuse an existing Stripe customer if we already minted one for this user.
-    const { data: existing } = await admin
-      .from("lp_subscriptions")
-      .select("provider_customer_id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    let customerId = existing?.provider_customer_id ?? "";
-
-    if (!customerId) {
-      const created = await stripeFetch("/customers", {
-        email: user.email ?? "",
-        "metadata[supabase_user_id]": user.id,
-      });
-      if (!created.ok || !created.body?.id) {
-        console.error("create-checkout: Stripe customer create failed", created.status);
-        return jsonResponse({ error: "Could not set up billing for your account." }, { status: 500, headers: cors });
-      }
-      customerId = created.body.id;
-
-      // Establish the server-trusted customer link before checkout. plan/status
-      // stay at defaults (free/inactive) until the webhook reports a real sub.
-      const { error: upsertErr } = await admin.from("lp_subscriptions").upsert(
-        { user_id: user.id, provider: "stripe", provider_customer_id: customerId, updated_at: new Date().toISOString() },
-        { onConflict: "user_id" },
-      );
-      if (upsertErr) throw upsertErr;
-    }
-
-    const session = await stripeFetch("/checkout/sessions", {
-      mode: "subscription",
-      customer: customerId,
-      "line_items[0][price]": STRIPE_PLUS_PRICE_ID,
-      "line_items[0][quantity]": "1",
-      client_reference_id: user.id,
-      "subscription_data[metadata][supabase_user_id]": user.id,
-      allow_promotion_codes: "true",
-      success_url: `${APP_URL}/app/settings?checkout=success`,
-      cancel_url: `${APP_URL}/app/settings?checkout=cancelled`,
+    // Build a Lemon Squeezy checkout (JSON:API). custom.supabase_user_id is
+    // server-set from the verified JWT and is the webhook's trust anchor.
+    const res = await fetch(`${LS_API_BASE}/checkouts`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LS_API_KEY}`,
+        Accept: "application/vnd.api+json",
+        "Content-Type": "application/vnd.api+json",
+      },
+      body: JSON.stringify({
+        data: {
+          type: "checkouts",
+          attributes: {
+            checkout_data: {
+              email: user.email ?? undefined,
+              custom: { supabase_user_id: user.id },
+            },
+            product_options: {
+              redirect_url: `${APP_URL}/app/settings?checkout=success`,
+            },
+          },
+          relationships: {
+            store: { data: { type: "stores", id: String(LS_STORE_ID) } },
+            variant: { data: { type: "variants", id: String(LS_VARIANT_ID) } },
+          },
+        },
+      }),
     });
 
-    if (!session.ok || !session.body?.url) {
-      console.error("create-checkout: Stripe session create failed", session.status);
+    const body = await res.json().catch(() => ({}));
+    const url = body?.data?.attributes?.url;
+    if (!res.ok || !url) {
+      // Don't log the response body: it can carry customer/billing detail.
+      console.error("create-checkout: Lemon Squeezy API error", res.status);
       return jsonResponse({ error: "Could not start checkout." }, { status: 500, headers: cors });
     }
 
-    return jsonResponse({ url: session.body.url }, { headers: cors });
+    return jsonResponse({ url }, { headers: cors });
   } catch (err) {
     console.error("create-checkout error:", err);
     return jsonResponse({ error: "Could not start checkout." }, { status: 500, headers: cors });
