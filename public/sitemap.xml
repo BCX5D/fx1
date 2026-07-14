@@ -31,6 +31,12 @@
     <priority>0.3</priority>
   </url>
   <url>
+    <loc>https://www.wirby.app/cookies</loc>
+    <lastmod>2026-07-14</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
     <loc>https://www.wirby.app/support</loc>
     <lastmod>2026-07-14</lastmod>
     <changefreq>monthly</changefreq>

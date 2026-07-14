@@ -9,6 +9,7 @@ import { Support } from "./routes/marketing/Support";
 import { Privacy } from "./routes/legal/Privacy";
 import { Terms } from "./routes/legal/Terms";
 import { RefundPolicy } from "./routes/legal/RefundPolicy";
+import { CookiePolicy } from "./routes/legal/CookiePolicy";
 import { SignIn } from "./routes/auth/SignIn";
 import { SignUp } from "./routes/auth/SignUp";
 import { ForgotPassword } from "./routes/auth/ForgotPassword";
@@ -73,6 +74,7 @@ export default function App() {
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/refund-policy" element={<RefundPolicy />} />
+              <Route path="/cookies" element={<CookiePolicy />} />
             </Route>
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />

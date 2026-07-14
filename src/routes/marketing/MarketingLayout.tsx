@@ -68,6 +68,7 @@ export function MarketingLayout() {
               <Link to="/privacy" className="text-ink-faint hover:text-pine-700">Privacy Policy</Link>
               <Link to="/terms" className="text-ink-faint hover:text-pine-700">Terms of Service</Link>
               <Link to="/refund-policy" className="text-ink-faint hover:text-pine-700">Refund Policy</Link>
+              <Link to="/cookies" className="text-ink-faint hover:text-pine-700">Cookie Policy</Link>
             </nav>
             <nav aria-label="Contact" className="flex flex-col gap-2.5 text-sm">
               <span className="font-medium text-ink">Contact</span>

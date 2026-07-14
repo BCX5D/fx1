@@ -82,6 +82,7 @@ export function Privacy() {
           <li><strong>Lemon Squeezy</strong> (merchant of record for Wirby Plus) — handles payment, card details, and sales tax/VAT directly; Wirby never sees or stores full card numbers.</li>
           <li><strong>Resend</strong> (transactional email) — delivers account emails (sign-up confirmation, password reset) and, if you opt in, reminder and weekly-digest emails. Only your email address and the message content are shared.</li>
           <li><strong>Plausible Analytics</strong> (usage analytics) — cookieless, does not track individuals across sites, does not collect IP addresses in a personally identifiable way.</li>
+          <li><strong>Cloudflare Turnstile</strong> (bot protection) — optionally shown on sign-in, sign-up, and password-reset forms to distinguish humans from bots; see our <Link to="/cookies" className="text-pine-700 underline hover:no-underline">Cookie Policy</Link> for detail. Off by default.</li>
         </LUl>
         <LP>
           We disclose data to authorities only when legally required to do so, and
@@ -112,6 +113,11 @@ export function Privacy() {
           Signing in uses essential session storage (either a secure session
           cookie or local session state, depending on how you access the Service)
           strictly necessary to keep you logged in. This is not used for tracking.
+        </LP>
+        <LP>
+          Full detail on every cookie and similar technology we use, including
+          Cloudflare Turnstile's strictly-necessary security cookie, is in our{" "}
+          <Link to="/cookies" className="text-pine-700 underline hover:no-underline">Cookie Policy</Link>.
         </LP>
       </LSection>
 
