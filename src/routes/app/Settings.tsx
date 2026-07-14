@@ -52,12 +52,17 @@ export function Settings() {
     const status = searchParams.get("checkout");
     if (!status) return;
     if (status === "success") {
-      toast("Payment received. Finishing setup…");
+      toast("Payment received. Unlocking Plus…");
+      // The Realtime subscription in DataContext usually flips this the
+      // instant the webhook writes lp_subscriptions (typically ~1-2s after
+      // checkout). This poll is just a fallback in case that event is missed
+      // (e.g. a dropped websocket), so it can be short.
+      refreshSubscription();
       let attempt = 0;
       const timer = setInterval(() => {
         refreshSubscription();
-        if (++attempt >= 6) clearInterval(timer);
-      }, 1500);
+        if (++attempt >= 4) clearInterval(timer);
+      }, 1000);
       setSearchParams({}, { replace: true });
       return () => clearInterval(timer);
     }

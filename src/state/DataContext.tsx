@@ -5,6 +5,7 @@ import {
 import { Store } from "../lib/store";
 import type { UserDB } from "../lib/types";
 import { fetchSubscription, FREE_SUB, type Subscription } from "../lib/billing";
+import { supabase } from "../lib/supabase";
 import { useAuth } from "./AuthContext";
 
 interface DataValue {
@@ -52,6 +53,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
     return () => { cancelled = true; };
   }, [store, userId]);
+
+  // Live-updates the plan the instant the webhook writes lp_subscriptions
+  // (e.g. right after a Lemon Squeezy checkout completes), instead of relying
+  // solely on the checkout-return poll in Settings. RLS scopes this to the
+  // caller's own row, so no extra filtering is needed beyond matching user_id.
+  useEffect(() => {
+    const client = supabase;
+    if (!client) return;
+    const channel = client
+      .channel(`lp_subscriptions:${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "lp_subscriptions", filter: `user_id=eq.${userId}` },
+        () => {
+          fetchSubscription(userId).then(setSubscription).catch(() => {});
+        },
+      )
+      .subscribe();
+    return () => {
+      client.removeChannel(channel);
+    };
+  }, [userId]);
 
   const value = useMemo(
     () => ({ store, ready, subscription, refreshSubscription }),
