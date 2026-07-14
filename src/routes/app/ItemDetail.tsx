@@ -12,7 +12,7 @@ import { SnoozeMenu } from "../../components/app/SnoozeMenu";
 import { Button } from "../../components/ui/Button";
 import { Modal } from "../../components/ui/Modal";
 import { EmptyState } from "../../components/ui/EmptyState";
-import { ListSkeleton } from "../../components/ui/Skeleton";
+import { DetailSkeleton } from "../../components/ui/Skeleton";
 import { auditSentence } from "../../lib/auditLabel";
 import { fmtDate, fmtDateTime } from "../../lib/dates";
 import { isSnoozed, urgencyOf } from "../../lib/urgency";
@@ -24,7 +24,7 @@ export function ItemDetail() {
   const { ready } = useData();
   const db = useDB();
 
-  if (!ready) return <ListSkeleton rows={3} />;
+  if (!ready) return <DetailSkeleton />;
 
   const item = db.items.find((it) => it.id === id);
   if (!item) {

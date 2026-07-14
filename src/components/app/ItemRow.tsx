@@ -10,13 +10,29 @@ import { KindIcon } from "./KindIcon";
 import { useItemActions } from "./itemActions";
 import { SnoozeMenu } from "./SnoozeMenu";
 
-export function ItemRow({ item }: { item: Item }) {
+interface ItemRowProps {
+  item: Item;
+  /** When set, a selection checkbox is shown and driven by these props (used for bulk actions). */
+  selected?: boolean;
+  onSelectChange?: (selected: boolean) => void;
+}
+
+export function ItemRow({ item, selected, onSelectChange }: ItemRowProps) {
   const actions = useItemActions();
   const urgency = urgencyOf(item);
   const snoozed = isSnoozed(item);
 
   return (
     <div className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-3.5 transition-colors hover:bg-paper/70 sm:gap-4">
+      {onSelectChange && (
+        <input
+          type="checkbox"
+          checked={!!selected}
+          onChange={(e) => onSelectChange(e.target.checked)}
+          aria-label={`Select ${item.title}`}
+          className="h-4 w-4 shrink-0 rounded accent-pine-700"
+        />
+      )}
       <KindIcon kind={item.kind} />
       <div className="min-w-0 flex-1">
         <Link

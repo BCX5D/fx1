@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout } from "./AuthLayout";
 import { TextInput } from "../../components/ui/Field";
 import { Button } from "../../components/ui/Button";
+import { AuthCardSkeleton } from "../../components/ui/Skeleton";
 import { useAuth } from "../../state/AuthContext";
 import { authAdapter } from "../../lib/auth";
 import { Seo } from "../../lib/seo";
@@ -64,7 +65,7 @@ export function ResetPassword() {
     return (
       <AuthLayout>
         <Seo title="Reset Your Password — Wirby" description="Set a new password for your Wirby account." path="/reset-password" noindex />
-        <p className="text-[15px] text-ink-faint" aria-busy="true" aria-live="polite">Checking your reset link…</p>
+        <AuthCardSkeleton />
       </AuthLayout>
     );
   }

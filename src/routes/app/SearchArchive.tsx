@@ -1,11 +1,13 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { MagnifyingGlass, Tray } from "@phosphor-icons/react";
+import { Archive, ArrowCounterClockwise, MagnifyingGlass, Trash, Tray } from "@phosphor-icons/react";
 import { PageHeader } from "../../components/app/PageHeader";
 import { ItemRow } from "../../components/app/ItemRow";
+import { useItemActions } from "../../components/app/itemActions";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ListSkeleton } from "../../components/ui/Skeleton";
 import { Button } from "../../components/ui/Button";
+import { Modal } from "../../components/ui/Modal";
 import { useDB, useData } from "../../state/DataContext";
 import { KIND_LABEL, type ItemKind, type ItemStatus } from "../../lib/types";
 import { sortByUrgency, urgencyOf } from "../../lib/urgency";
@@ -30,6 +32,9 @@ export function SearchArchive() {
   const [params, setParams] = useSearchParams();
   const { ready } = useData();
   const db = useDB();
+  const actions = useItemActions();
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
   const q = params.get("q") ?? "";
   const status = (params.get("status") as ItemStatus) || "active";
@@ -61,6 +66,30 @@ export function SearchArchive() {
       ? sortByUrgency(filtered)
       : [...filtered].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   }, [db.items, q, status, kind, urgency, undated]);
+
+  // Selection only makes sense within the currently visible result set, so drop
+  // anything that scrolled out of view when filters change or an item is mutated away.
+  useEffect(() => {
+    const visibleIds = new Set(results.map((it) => it.id));
+    setSelected((prev) => {
+      const next = new Set([...prev].filter((id) => visibleIds.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [results]);
+
+  const selectedItems = results.filter((it) => selected.has(it.id));
+  const allSelected = results.length > 0 && selected.size === results.length;
+
+  const toggleSelectAll = () => {
+    setSelected(allSelected ? new Set() : new Set(results.map((it) => it.id)));
+  };
+  const toggleOne = (id: string, checked: boolean) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id); else next.delete(id);
+      return next;
+    });
+  };
 
   return (
     <div>
@@ -147,14 +176,69 @@ export function SearchArchive() {
         />
       ) : (
         <>
-          <p className="mb-2 text-[13px] text-ink-faint">
-            {results.length} {results.length === 1 ? "item" : "items"}
-          </p>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+            <label className="flex items-center gap-2 text-[13px] text-ink-faint">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleSelectAll}
+                aria-label="Select all results"
+                className="h-4 w-4 rounded accent-pine-700"
+              />
+              {selected.size > 0
+                ? `${selected.size} selected`
+                : `${results.length} ${results.length === 1 ? "item" : "items"}`}
+            </label>
+            {selected.size > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {status === "active" && (
+                  <Button variant="secondary" size="sm" onClick={() => { actions.bulkArchive(selectedItems); setSelected(new Set()); }}>
+                    <Archive size={15} aria-hidden />
+                    Archive selected
+                  </Button>
+                )}
+                {(status === "done" || status === "archived") && (
+                  <Button variant="secondary" size="sm" onClick={() => { actions.bulkRestore(selectedItems); setSelected(new Set()); }}>
+                    <ArrowCounterClockwise size={15} aria-hidden />
+                    {status === "done" ? "Reopen selected" : "Restore selected"}
+                  </Button>
+                )}
+                {status !== "active" && (
+                  <Button variant="danger" size="sm" onClick={() => setConfirmBulkDelete(true)}>
+                    <Trash size={15} aria-hidden />
+                    Delete selected
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
           <div className="divide-y divide-line rounded-2xl border border-line bg-panel px-5">
-            {results.map((it) => <ItemRow key={it.id} item={it} />)}
+            {results.map((it) => (
+              <ItemRow key={it.id} item={it} selected={selected.has(it.id)} onSelectChange={(v) => toggleOne(it.id, v)} />
+            ))}
           </div>
         </>
       )}
+
+      <Modal open={confirmBulkDelete} onClose={() => setConfirmBulkDelete(false)} title="Delete selected items?">
+        <p className="text-[15px] leading-relaxed text-ink-soft">
+          {selectedItems.length} {selectedItems.length === 1 ? "item" : "items"} will be permanently
+          removed, along with their reminders. This cannot be undone.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <Button variant="ghost" onClick={() => setConfirmBulkDelete(false)}>Keep them</Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              actions.bulkRemove(selectedItems);
+              setSelected(new Set());
+              setConfirmBulkDelete(false);
+            }}
+          >
+            Delete permanently
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

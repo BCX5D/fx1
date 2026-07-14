@@ -4,6 +4,7 @@ import { ArrowLeft, ClipboardText, FileArrowUp, ListMagnifyingGlass, PencilSimpl
 import { PageHeader } from "../../components/app/PageHeader";
 import { Button } from "../../components/ui/Button";
 import { TextArea } from "../../components/ui/Field";
+import { FormFieldsSkeleton } from "../../components/ui/Skeleton";
 import {
   ItemForm, draftFromCandidate, draftToPatch, emptyDraft, validateDraft,
   type DraftErrors, type ItemDraft,
@@ -316,16 +317,12 @@ export function AddSource() {
       )}
 
       {phase === "reading" ? (
-        <div className="rounded-2xl border border-line bg-panel p-8" aria-busy="true">
-          <div className="flex items-center gap-3">
-            <ListMagnifyingGlass size={20} className="text-pine-600" aria-hidden />
-            <p className="text-[15px] font-medium text-ink">Scanning {readingLabel}…</p>
-          </div>
-          <div className="mt-5 space-y-2.5">
-            <div className="skeleton h-3.5 w-3/4" />
-            <div className="skeleton h-3.5 w-1/2" />
-            <div className="skeleton h-3.5 w-2/3" />
-          </div>
+        <div
+          className="rounded-2xl border border-line bg-panel p-5 sm:p-6"
+          aria-busy="true"
+          aria-label={`Scanning ${readingLabel}`}
+        >
+          <FormFieldsSkeleton />
         </div>
       ) : tab === "upload" ? (
         <div>

@@ -14,6 +14,7 @@ import { ForgotPassword } from "./routes/auth/ForgotPassword";
 import { ResetPassword } from "./routes/auth/ResetPassword";
 import { Confirmed } from "./routes/auth/Confirmed";
 import { AppShell } from "./components/app/AppShell";
+import { AppShellSkeleton } from "./components/ui/Skeleton";
 import { Dashboard } from "./routes/app/Dashboard";
 import { AddSource } from "./routes/app/AddSource";
 import { ItemDetail } from "./routes/app/ItemDetail";
@@ -37,13 +38,9 @@ function RequireAuth() {
   );
 }
 
-/** Neutral hold state while the session is verified. Calm, no spinner theatrics. */
+/** Neutral hold state while the session is verified. Shaped like the app shell it usually leads to, so nothing jumps once it resolves. */
 function AuthResolving() {
-  return (
-    <div className="flex min-h-dvh items-center justify-center" aria-busy="true" aria-live="polite">
-      <p className="font-display text-lg text-ink-faint">Checking your session…</p>
-    </div>
-  );
+  return <AppShellSkeleton />;
 }
 
 /** Sends first-time users to onboarding, and onboarded users away from it. */

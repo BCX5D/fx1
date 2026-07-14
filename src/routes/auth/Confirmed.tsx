@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { CheckCircle, WarningCircle } from "@phosphor-icons/react";
 import { AuthLayout } from "./AuthLayout";
 import { Button } from "../../components/ui/Button";
+import { AuthCardSkeleton } from "../../components/ui/Skeleton";
 import { useAuth } from "../../state/AuthContext";
 import { Seo } from "../../lib/seo";
 
@@ -45,9 +46,7 @@ export function Confirmed() {
           path="/confirmed"
           noindex
         />
-        <p className="text-[15px] text-ink-faint" aria-busy="true" aria-live="polite">
-          Confirming your email…
-        </p>
+        <AuthCardSkeleton />
       </AuthLayout>
     );
   }
