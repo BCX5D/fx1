@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { EnvelopeSimple } from "@phosphor-icons/react";
+import { FaqItem } from "../../components/ui/FaqItem";
 import { Seo } from "../../lib/seo";
 
 interface FaqItem { q: string; a: React.ReactNode }
@@ -206,15 +207,7 @@ export function Support() {
               {group.title}
             </h2>
             <div className="divide-y divide-line border-t border-line">
-              {group.items.map((item) => (
-                <details key={item.q} className="group py-5">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-medium text-ink transition-colors hover:text-pine-700 [&::-webkit-details-marker]:hidden">
-                    {item.q}
-                    <span className="text-ink-faint transition-transform group-open:rotate-45" aria-hidden>+</span>
-                  </summary>
-                  <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-soft">{item.a}</p>
-                </details>
-              ))}
+              {group.items.map((item) => <FaqItem key={item.q} q={item.q} a={item.a} />)}
             </div>
           </section>
         ))}

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { ArrowRight, Check, FileArrowUp, ListMagnifyingGlass } from "@phosphor-icons/react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
+import { FaqItem } from "../../components/ui/FaqItem";
 import { MiniDashboard } from "../../components/marketing/MiniDashboard";
 import { UrgencyPill } from "../../components/app/UrgencyPill";
 import { KindIcon } from "../../components/app/KindIcon";
@@ -407,15 +408,7 @@ export function Home() {
                     </>
                   ),
                 },
-              ].map((f) => (
-                <details key={f.q} className="group py-5">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-medium text-ink transition-colors hover:text-pine-700 [&::-webkit-details-marker]:hidden">
-                    {f.q}
-                    <span className="text-ink-faint transition-transform group-open:rotate-45" aria-hidden>+</span>
-                  </summary>
-                  <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-soft">{f.a}</p>
-                </details>
-              ))}
+              ].map((f) => <FaqItem key={f.q} q={f.q} a={f.a} />)}
             </div>
           </div>
         </div>

@@ -16,6 +16,7 @@ import { ForgotPassword } from "./routes/auth/ForgotPassword";
 import { ResetPassword } from "./routes/auth/ResetPassword";
 import { Confirmed } from "./routes/auth/Confirmed";
 import { AppShell } from "./components/app/AppShell";
+import { ScrollToTop } from "./components/app/ScrollToTop";
 import { AppShellSkeleton } from "./components/ui/Skeleton";
 import { Dashboard } from "./routes/app/Dashboard";
 import { AddSource } from "./routes/app/AddSource";
@@ -66,6 +67,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
+          <ScrollToTop />
           <Routes>
             <Route element={<MarketingLayout />}>
               <Route path="/" element={<Home />} />

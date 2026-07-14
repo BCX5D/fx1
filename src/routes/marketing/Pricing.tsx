@@ -1,6 +1,7 @@
 import { ArrowRight, Check } from "@phosphor-icons/react";
 import { Link } from "react-router-dom";
 import { Button } from "../../components/ui/Button";
+import { FaqItem } from "../../components/ui/FaqItem";
 import { Seo } from "../../lib/seo";
 
 const FREE = [
@@ -142,15 +143,7 @@ export function Pricing() {
       <div className="mt-20 max-w-2xl lg:ml-[16%]">
         <h2 className="font-display text-2xl font-medium tracking-tight text-ink sm:text-3xl">Fair questions</h2>
         <div className="mt-6 divide-y divide-line border-t border-line">
-          {FAQ.map((f) => (
-            <details key={f.q} className="group py-5">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-medium text-ink transition-colors hover:text-pine-700 [&::-webkit-details-marker]:hidden">
-                {f.q}
-                <span className="text-ink-faint transition-transform group-open:rotate-45" aria-hidden>+</span>
-              </summary>
-              <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ink-soft">{f.a}</p>
-            </details>
-          ))}
+          {FAQ.map((f) => <FaqItem key={f.q} q={f.q} a={f.a} />)}
         </div>
         <p className="mt-8 text-[15px] text-ink-soft">
           Not sure which plan fits? See{" "}
