@@ -5,6 +5,7 @@ import { ToastProvider } from "./state/ToastContext";
 import { MarketingLayout } from "./routes/marketing/MarketingLayout";
 import { Home } from "./routes/marketing/Home";
 import { Pricing } from "./routes/marketing/Pricing";
+import { Support } from "./routes/marketing/Support";
 import { Privacy } from "./routes/legal/Privacy";
 import { Terms } from "./routes/legal/Terms";
 import { RefundPolicy } from "./routes/legal/RefundPolicy";
@@ -43,12 +44,19 @@ function AuthResolving() {
   return <AppShellSkeleton />;
 }
 
-/** Sends first-time users to onboarding, and onboarded users away from it. */
+/**
+ * Sends first-time users to onboarding, and onboarded users away from it.
+ * Holds on a neutral skeleton until the onboarded flag is known, instead of
+ * rendering the destination first and redirecting a beat later — otherwise a
+ * brand-new user sees a flash of the real dashboard before bouncing to
+ * onboarding.
+ */
 function OnboardingGate({ mode }: { mode: "app" | "onboarding" }) {
   const { ready } = useData();
   const db = useDB();
-  if (ready && mode === "app" && !db.onboarded) return <Navigate to="/app/onboarding" replace />;
-  if (ready && mode === "onboarding" && db.onboarded) return <Navigate to="/app" replace />;
+  if (!ready) return <AppShellSkeleton />;
+  if (mode === "app" && !db.onboarded) return <Navigate to="/app/onboarding" replace />;
+  if (mode === "onboarding" && db.onboarded) return <Navigate to="/app" replace />;
   return <Outlet />;
 }
 
@@ -61,6 +69,7 @@ export default function App() {
             <Route element={<MarketingLayout />}>
               <Route path="/" element={<Home />} />
               <Route path="/pricing" element={<Pricing />} />
+              <Route path="/support" element={<Support />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/refund-policy" element={<RefundPolicy />} />

@@ -23,6 +23,14 @@ export function MarketingLayout() {
             >
               Pricing
             </NavLink>
+            <NavLink
+              to="/support"
+              className={({ isActive }) =>
+                `press hidden rounded-[10px] px-3 py-2 text-sm font-medium sm:block ${isActive ? "text-pine-700" : "text-ink-soft hover:text-ink"}`
+              }
+            >
+              Support
+            </NavLink>
             <Link to="/signin" className="press rounded-[10px] px-3 py-2 text-sm font-medium text-ink-soft hover:text-ink">
               Sign in
             </Link>
@@ -51,7 +59,7 @@ export function MarketingLayout() {
               <span className="font-medium text-ink">Product</span>
               <Link to="/#what-is-wirby" className="text-ink-faint hover:text-pine-700">What is Wirby</Link>
               <Link to="/pricing" className="text-ink-faint hover:text-pine-700">Pricing</Link>
-              <Link to="/#faq" className="text-ink-faint hover:text-pine-700">FAQ</Link>
+              <Link to="/support" className="text-ink-faint hover:text-pine-700">Support & FAQ</Link>
               <Link to="/signup" className="text-ink-faint hover:text-pine-700">Start free</Link>
               <Link to="/signin" className="text-ink-faint hover:text-pine-700">Sign in</Link>
             </nav>
