@@ -24,19 +24,18 @@ export function FaqItem({ q, a }: { q: string; a: ReactNode }) {
       >
         {q}
         {/* Two bars that rotate independently: at rest they sit at 0deg/90deg
-            (a "+"), and both rotate 45deg further when open, landing at
-            45deg/135deg -- a "x", with the rotation itself animating instead
-            of an instant swap between two static icons. */}
+            (a "+"), and open to 45deg/-45deg -- 90deg apart, so they cross
+            into an "x" instead of landing on the same angle and overlapping
+            into a single line. Inline transform (not Tailwind's rotate-45
+            utility) since -45deg isn't in the default rotate scale. */}
         <span className="relative flex h-5 w-5 shrink-0 items-center justify-center" aria-hidden>
           <span
-            className={`absolute h-[1.5px] w-3 rounded-full bg-current text-ink-faint transition-transform duration-300 ease-out ${
-              open ? "rotate-45" : "rotate-0"
-            }`}
+            className="absolute h-[1.5px] w-3 rounded-full bg-current text-ink-faint transition-transform duration-300 ease-out"
+            style={{ transform: `rotate(${open ? 45 : 0}deg)` }}
           />
           <span
-            className={`absolute h-[1.5px] w-3 rounded-full bg-current text-ink-faint transition-transform duration-300 ease-out ${
-              open ? "rotate-45" : "rotate-90"
-            }`}
+            className="absolute h-[1.5px] w-3 rounded-full bg-current text-ink-faint transition-transform duration-300 ease-out"
+            style={{ transform: `rotate(${open ? -45 : 90}deg)` }}
           />
         </span>
       </button>
