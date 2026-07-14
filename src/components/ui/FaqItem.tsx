@@ -1,17 +1,37 @@
-import { useId, useState, type ReactNode } from "react";
+import { useLayoutEffect, useId, useRef, useState, type ReactNode } from "react";
 
 /**
  * A single FAQ row: click the question to reveal the answer.
  *
  * Deliberately not a native <details>/<summary> element -- browsers toggle
- * that instantly with no way to animate the reveal, which is the "just
- * appears/disappears" behavior this replaces. The grid-template-rows
- * 0fr -> 1fr transition below is a CSS-only way to animate from "no height"
- * to "content height" without JS measuring the content first.
+ * that instantly with no way to animate the reveal. Also deliberately not
+ * animating CSS grid-template-rows (0fr -> 1fr): that's a newer CSS feature
+ * and iOS Safari's real-device rendering of it is unreliable/janky, even
+ * though it looks fine on desktop Chrome. Animating a measured pixel
+ * `height` instead is old, boring CSS that every browser (including iPhone
+ * Safari) handles smoothly.
  */
 export function FaqItem({ q, a }: { q: string; a: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [height, setHeight] = useState(0);
+  const contentRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
+
+  // Re-measure and apply whenever open changes, and keep tracking the
+  // answer's natural height while open (e.g. iPhone rotating to landscape
+  // reflows the text to a different number of lines) via ResizeObserver.
+  useLayoutEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    if (!open) {
+      setHeight(0);
+      return;
+    }
+    setHeight(el.scrollHeight);
+    const ro = new ResizeObserver(() => setHeight(el.scrollHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [open]);
 
   return (
     <div className="py-5">
@@ -41,10 +61,10 @@ export function FaqItem({ q, a }: { q: string; a: ReactNode }) {
       </button>
       <div
         id={panelId}
-        className="grid transition-[grid-template-rows] duration-300 ease-in-out"
-        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+        className="overflow-hidden transition-[height] duration-300 ease-in-out"
+        style={{ height }}
       >
-        <div className="overflow-hidden">
+        <div ref={contentRef}>
           <p className="max-w-xl pt-3 text-[15px] leading-relaxed text-ink-soft">{a}</p>
         </div>
       </div>
